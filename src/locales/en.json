@@ -1,0 +1,580 @@
+{
+  "nav": {
+    "home": "Home",
+    "orders": "Orders",
+    "events": "Events",
+    "systemLog": "System Log",
+    "reports": "Reports",
+    "pkf": "PKF",
+    "energy": "Energy",
+    "waste": "Waste",
+    "masterData": "Master Data",
+    "products": "Products",
+    "materials": "Materials",
+    "settings": "Settings",
+    "general": "General",
+    "notifications": "Notifications",
+    "production": "Production",
+    "goTo": "Go to"
+  },
+  "common": {
+    "save": "Save",
+    "saveChanges": "Save changes",
+    "cancel": "Cancel",
+    "create": "Create",
+    "generate": "Generate",
+    "exportCsv": "Export CSV",
+    "error": "Error",
+    "loading": "Loading...",
+    "noData": "No data",
+    "from": "From",
+    "to": "To",
+    "all": "All",
+    "viewAll": "View all",
+    "actions": "Actions",
+    "line": "Line",
+    "filterBy": "Filter by",
+    "period": "Period",
+    "order": "Order",
+    "status": "Status",
+    "type": "Type",
+    "severity": "Severity",
+    "title": "Title",
+    "description": "Description",
+    "start": "Start",
+    "end": "End",
+    "time": "Time",
+    "duration": "Duration",
+    "by": "By",
+    "size": "Size",
+    "code": "Code",
+    "name": "Name",
+    "unit": "Unit",
+    "now": "Now"
+  },
+  "home": {
+    "title": "Home",
+    "newOrder": "New order",
+    "notifications": "Notifications",
+    "periods": {
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly"
+    },
+    "dateRanges": {
+      "last7days": "Last 7 days",
+      "last14days": "Last 14 days",
+      "last30days": "Last 30 days",
+      "last3months": "Last 3 months",
+      "last6months": "Last 6 months",
+      "lastYear": "Last year",
+      "pickDate": "Pick a date"
+    },
+    "stats": {
+      "lineUptime": "Line Uptime",
+      "productionProgress": "Production Progress",
+      "wastePct": "Waste %",
+      "lineEfficiency": "Line Efficiency",
+      "over": "Over",
+      "running": "Running"
+    },
+    "timeline": {
+      "title": "Machine State Timeline",
+      "last24h": "Last 24 hours",
+      "lastNDays": "Last {n} days",
+      "loading": "Loading state data...",
+      "error": "Error: {msg}",
+      "empty": "No state data available",
+      "running": "Running",
+      "warning": "Warning",
+      "stopped": "Stopped"
+    },
+    "events": {
+      "title": "Production Events",
+      "subtitle": "Last 5 events",
+      "viewAll": "View all",
+      "loading": "Loading events...",
+      "empty": "No events found",
+      "columns": {
+        "time": "Time",
+        "line": "Line",
+        "type": "Type",
+        "duration": "Duration",
+        "title": "Title"
+      }
+    },
+    "orders": {
+      "title": "Order Queue",
+      "subtitle": "Current production sequence",
+      "empty": "No orders for this line",
+      "columns": {
+        "position": "Position",
+        "orderNumber": "Order No.",
+        "sku": "SKU",
+        "status": "Status",
+        "dueDate": "Due Date"
+      },
+      "labels": {
+        "prev1": "Prev-1",
+        "prev": "Prev",
+        "current": "Current",
+        "next": "Next",
+        "next1": "Next+1"
+      }
+    }
+  },
+  "orders": {
+    "title": "Orders",
+    "filterSku": "Filter SKU...",
+    "allLines": "All Lines",
+    "allStatuses": "All Statuses",
+    "statusesSelected": "{n} status | {n} statuses",
+    "display": "Display",
+    "rowsSelected": "{n} row(s) selected.",
+    "columns": {
+      "orderNumber": "Order No.",
+      "sku": "SKU",
+      "skuName": "SKU Name",
+      "skuDescription": "Description",
+      "priority": "Priority",
+      "volume": "Volume",
+      "produced": "Produced",
+      "line": "Line",
+      "dueDate": "Due Date",
+      "status": "Status",
+      "queue": "Queue",
+      "plannedStart": "Planned Start",
+      "plannedComplete": "Planned Complete",
+      "control": "Control"
+    },
+    "dates": {
+      "plannedStart": "Planned Start",
+      "plannedComplete": "Planned Complete",
+      "dueDate": "Due Date"
+    },
+    "status": {
+      "created": "Created",
+      "running": "Running",
+      "paused": "Paused",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "priority": {
+      "High": "High",
+      "Medium": "Medium",
+      "Low": "Low"
+    },
+    "queue": {
+      "inProcess": "In Process",
+      "next": "Next"
+    },
+    "control": {
+      "start": "Start",
+      "pause": "Pause",
+      "complete": "Complete",
+      "done": "Done"
+    },
+    "actions": {
+      "copyOrderNumber": "Copy order number",
+      "viewDetails": "View order details",
+      "reschedule": "Reschedule order",
+      "cancel": "Cancel order"
+    },
+    "toast": {
+      "copied": "Copied to clipboard",
+      "copiedDesc": "Order number copied to clipboard",
+      "resequenceFailed": "Failed to resequence",
+      "statusFailed": "Failed",
+      "cancelled": "Order cancelled",
+      "cancelFailed": "Failed to cancel order"
+    }
+  },
+  "newOrder": {
+    "title": "New order",
+    "description": "Add a new production order",
+    "fields": {
+      "orderNumber": "Order Number",
+      "sku": "SKU",
+      "volume": "Volume",
+      "unit": "Unit",
+      "priority": "Priority",
+      "line": "Line",
+      "dueDate": "Due Date",
+      "plannedStart": "Planned Start",
+      "plannedComplete": "Planned Complete",
+      "useCage": "Use cage tracking",
+      "packagesPerCage": "Packages per cage"
+    },
+    "placeholder": {
+      "orderNumber": "WO-2024-001",
+      "selectSku": "Select a SKU...",
+      "selectUnit": "Unit...",
+      "volume": "500",
+      "packagesPerCage": "50"
+    },
+    "toast": {
+      "created": "Order created",
+      "alreadyExists": "Order number already exists",
+      "failed": "Failed to create order"
+    }
+  },
+  "deleteOrders": {
+    "title": "Cancel {n} order | Cancel {n} orders",
+    "description": "Are you sure? This action cannot be undone.",
+    "keep": "Keep",
+    "cancelOrders": "Cancel orders",
+    "toast": {
+      "success": "{n} order cancelled | {n} orders cancelled",
+      "failed": "Failed to cancel some orders"
+    }
+  },
+  "orderDetail": {
+    "title": "Order Details",
+    "loading": "Loading...",
+    "cards": {
+      "sku": "SKU",
+      "status": "Status",
+      "priority": "Priority",
+      "line": "Line",
+      "dueDate": "Due Date",
+      "volume": "Volume",
+      "cageSize": "Cage Size",
+      "produced": "Produced",
+      "progress": "Progress",
+      "packagesProduced": "Packages Produced"
+    },
+    "progressBar": {
+      "label": "Production progress",
+      "exceeded": "{pct}% — exceeded target"
+    },
+    "produced": {
+      "caption": "Total / Plan",
+      "captionWithGood": "Total / Good / Plan"
+    },
+    "cages": {
+      "title": "Completed Cages",
+      "subtitle": "{n} cage | {n} cages",
+      "add": "Add Cage",
+      "empty": "No cages completed yet",
+      "locked": "Operators can only add cages while the order is running or paused.",
+      "columns": {
+        "cageId": "Cage ID",
+        "size": "Size",
+        "packages": "Packages",
+        "completedAt": "Completed At",
+        "completedBy": "Completed By"
+      },
+      "toast": {
+        "added": "Cage completed — +{n} pcs",
+        "addFailed": "Failed to add cage",
+        "removed": "Cage removed",
+        "removeFailed": "Failed to remove cage",
+        "packagesUpdated": "Packages updated",
+        "packagesFailed": "Failed to update packages"
+      }
+    },
+    "comment": {
+      "title": "Comment",
+      "placeholder": "Add a comment...",
+      "empty": "No comment",
+      "toast": {
+        "saved": "Comment saved",
+        "failed": "Failed to save comment"
+      }
+    },
+    "waste": {
+      "title": "Waste",
+      "label": "Waste ({uom})",
+      "placeholder": "Enter waste amount",
+      "confirm": "Confirm",
+      "goodQuantity": "Good Quantity",
+      "locked": "Operators can only record waste while the order is running or paused.",
+      "recorded": "Recorded: {waste} {uom} waste, {good} {uom} good",
+      "toast": {
+        "saved": "Waste recorded",
+        "failed": "Failed to record waste"
+      }
+    }
+  },
+  "events": {
+    "title": "Events",
+    "addEvent": "Add Event",
+    "unacknowledgedStops": "{n} unacknowledged stop | {n} unacknowledged stops",
+    "annotate": "Annotate",
+    "allLines": "All Lines",
+    "allTypes": "All Types",
+    "allSeverities": "All Severities",
+    "count": "{n} event | {n} events",
+    "columns": {
+      "time": "Time",
+      "line": "Line",
+      "type": "Type",
+      "severity": "Severity",
+      "title": "Title",
+      "duration": "Duration",
+      "status": "Status",
+      "by": "By"
+    },
+    "status": {
+      "open": "Open",
+      "closed": "Closed"
+    },
+    "types": {
+      "downtime_unplanned": "Unplanned Stop",
+      "downtime_planned": "Planned Stop",
+      "changeover": "Changeover",
+      "quality_hold": "Quality Hold",
+      "maintenance": "Maintenance",
+      "operator_note": "Note",
+      "safety": "Safety"
+    },
+    "severities": {
+      "info": "Info",
+      "warning": "Warning",
+      "critical": "Critical"
+    }
+  },
+  "addEvent": {
+    "titleAnnotate": "Annotate Stop",
+    "titleAdd": "Add Event",
+    "descAnnotate": "Record the reason for this production stop",
+    "descAdd": "Log a standalone production event",
+    "stoppedAt": "Stopped at {time} · {duration} min",
+    "fields": {
+      "line": "Line",
+      "eventType": "Event Type",
+      "severity": "Severity",
+      "title": "Title",
+      "description": "Description",
+      "start": "Start",
+      "end": "End"
+    },
+    "placeholder": {
+      "selectType": "Select type...",
+      "title": "Brief description...",
+      "description": "Details (optional)"
+    },
+    "types": {
+      "downtime_unplanned": "Unplanned Downtime",
+      "downtime_planned": "Planned Downtime",
+      "changeover": "Changeover",
+      "quality_hold": "Quality Hold",
+      "maintenance": "Maintenance",
+      "operator_note": "Operator Note",
+      "safety": "Safety"
+    },
+    "severities": {
+      "info": "Info",
+      "warning": "Warning",
+      "critical": "Critical"
+    },
+    "toast": {
+      "logged": "Event logged",
+      "failed": "Failed to log event"
+    }
+  },
+  "reports": {
+    "pkf": {
+      "title": "PKF Report",
+      "empty": "No production data found for the selected criteria.",
+      "count": "{n} order(s) — data from ClickHouse historian",
+      "columns": {
+        "order": "Order",
+        "sku": "SKU",
+        "product": "Product",
+        "start": "Start",
+        "duration": "Duration (h)",
+        "basalt": "Basalt (t)",
+        "binder": "Binder (kg)",
+        "wool": "Wool (t)",
+        "waste": "Waste (kg)",
+        "efficiency": "Efficiency (%)"
+      }
+    },
+    "energy": {
+      "title": "Energy Report",
+      "empty": "No energy data found for the selected criteria.",
+      "count": "{n} order(s) — data from ClickHouse historian",
+      "cards": {
+        "totalGas": "Total Gas",
+        "totalElectricity": "Total Electricity",
+        "totalWater": "Total Water"
+      },
+      "columns": {
+        "order": "Order",
+        "sku": "SKU",
+        "product": "Product",
+        "start": "Start",
+        "duration": "Duration (h)",
+        "gas": "Gas (m³)",
+        "electricity": "Electricity (kWh)",
+        "water": "Water (m³)"
+      }
+    },
+    "waste": {
+      "title": "Waste Report",
+      "empty": "No waste data found for the selected criteria.",
+      "count": "{n} order(s) — data from ClickHouse historian",
+      "cards": {
+        "totalWaste": "Total Waste",
+        "trimming": "Trimming",
+        "startupLosses": "Startup Losses",
+        "avgWastePct": "Avg Waste %"
+      },
+      "columns": {
+        "order": "Order",
+        "sku": "SKU",
+        "product": "Product",
+        "start": "Start",
+        "duration": "Duration (h)",
+        "trimming": "Trimming (kg)",
+        "startup": "Startup (kg)",
+        "rejected": "Rejected (kg)",
+        "total": "Total (kg)",
+        "wastePct": "Waste %"
+      }
+    }
+  },
+  "masterData": {
+    "products": {
+      "count": "{n} product(s)",
+      "columns": {
+        "number": "Number",
+        "sku": "SKU",
+        "description": "Description",
+        "code": "Code"
+      },
+      "actions": {
+        "viewDetails": "View details"
+      }
+    },
+    "materials": {
+      "count": "{n} material(s)",
+      "columns": {
+        "code": "Code",
+        "name": "Name",
+        "unit": "Unit",
+        "stock": "Stock"
+      }
+    }
+  },
+  "settings": {
+    "lines": {
+      "title": "Production Lines",
+      "description": "Choose which lines you work with. Only selected lines will appear throughout the app.",
+      "saveChanges": "Save changes",
+      "atLeastOne": "Select at least one line.",
+      "toast": {
+        "saved": "Line preferences saved",
+        "failed": "Failed to save line preferences"
+      }
+    },
+    "profile": {
+      "title": "Profile",
+      "description": "Your personal information.",
+      "name": "Name",
+      "nameDesc": "Your display name shown throughout the app.",
+      "namePlaceholder": "Your name",
+      "role": "Role",
+      "roleDesc": "Your access level is managed by an administrator.",
+      "admin": "Admin",
+      "operator": "Operator",
+      "viewer": "Viewer",
+      "toast": {
+        "updated": "Profile updated",
+        "failed": "Failed to save"
+      }
+    },
+    "system": {
+      "title": "System",
+      "description": "Application-wide behaviour settings. Changes take effect immediately.",
+      "autoRefresh": "Auto-refresh machine state timeline",
+      "autoRefreshDesc": "Periodically re-fetch the timeline so the active segment's duration stays current.",
+      "interval": "Refresh interval (seconds)",
+      "intervalDesc": "How often the timeline re-fetches when auto-refresh is enabled. Min 10, max 3600.",
+      "intervalError": "Interval must be between 10 and 3600 seconds",
+      "efficiencyChart": "Show line efficiency chart",
+      "efficiencyChartDesc": "Display the line efficiency chart on the home dashboard.",
+      "statsCards": "Show stats cards",
+      "statsCardsDesc": "Display the KPI cards (uptime, waste, etc.) at the top of the home dashboard.",
+      "uptimeDiagram": "Show line uptime diagram",
+      "uptimeDiagramDesc": "Display the line state timeline diagram on the home dashboard.",
+      "toast": {
+        "saved": "System settings saved",
+        "failed": "Failed to save system settings"
+      }
+    },
+    "language": {
+      "title": "Language",
+      "description": "Interface display language.",
+      "en": "English",
+      "ru": "Русский"
+    }
+  },
+  "notifications": {
+    "title": "Notification Events",
+    "description": "Choose which event types appear in the Alerts panel.",
+    "types": {
+      "USER":        { "label": "User Events",        "description": "Login, logout, and user management events." },
+      "PROCESS":     { "label": "Process Events",     "description": "Order creation, state transitions, and production events." },
+      "APP":         { "label": "Application Events", "description": "System startup, configuration changes, and internal errors." },
+      "EQUIPMENT":   { "label": "Equipment Events",   "description": "Production line state changes (running, warning, stopped)." },
+      "INTEGRATION": { "label": "Integration Events", "description": "External system connections and data exchange." }
+    }
+  },
+  "production": {
+    "title": "Production",
+    "lastUpdated": "Last updated",
+    "noData": "No process data",
+    "refresh": "Refresh",
+    "units": {
+      "curing":  "Curing",
+      "acon":    "ACON",
+      "binder":  "Binder",
+      "main":    "Main",
+      "package": "Package"
+    },
+    "params": {
+      "cure_temp":       "Curing Temp.",
+      "cure_pressure":   "Curing Pressure",
+      "belt_speed":      "Belt Speed",
+      "acon_temp":       "Air Temperature",
+      "acon_airflow":    "Airflow",
+      "acon_humidity":   "Humidity",
+      "binder_flow":     "Binder Flow",
+      "binder_conc":     "Concentration",
+      "binder_pressure": "Pressure",
+      "line_speed":      "Line Speed",
+      "line_output":     "Output",
+      "pack_speed":      "Pack Speed",
+      "film_tension":    "Film Tension"
+    },
+    "uom": {
+      "cure_temp":       "°C",
+      "cure_pressure":   "bar",
+      "belt_speed":      "m/min",
+      "acon_temp":       "°C",
+      "acon_airflow":    "m³/h",
+      "acon_humidity":   "%",
+      "binder_flow":     "kg/h",
+      "binder_conc":     "%",
+      "binder_pressure": "bar",
+      "line_speed":      "m/min",
+      "line_output":     "kg/h",
+      "pack_speed":      "ppm",
+      "film_tension":    "N"
+    }
+  },
+  "systemLog": {
+    "title": "System Log",
+    "allTypes": "All Types",
+    "allLevels": "All Levels",
+    "entries": "{n} entries",
+    "columns": {
+      "time": "Time",
+      "type": "Type",
+      "level": "Level",
+      "message": "Message"
+    }
+  }
+}
