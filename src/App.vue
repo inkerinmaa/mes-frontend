@@ -109,6 +109,10 @@ const links = computed(() => [[{
     label: t('nav.notifications'),
     to: '/settings/notifications',
     onSelect: () => { open.value = false }
+  }, {
+    label: t('nav.shifts'),
+    to: '/settings/shifts',
+    onSelect: () => { open.value = false }
   }]
 }]] satisfies NavigationMenuItem[][])
 

@@ -69,6 +69,7 @@ async function bootstrap() {
         children: [
           { path: "", component: () => import("./pages/settings/index.vue") },
           { path: "notifications", component: () => import("./pages/settings/notifications.vue") },
+          { path: "shifts", component: () => import("./pages/settings/shifts.vue") },
         ],
       },
     ],

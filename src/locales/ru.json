@@ -14,6 +14,7 @@
     "settings": "Настройки",
     "general": "Общие",
     "notifications": "Уведомления",
+    "shifts": "Смены",
     "production": "Производство",
     "goTo": "Перейти к"
   },
@@ -110,7 +111,7 @@
       "columns": {
         "position": "Позиция",
         "orderNumber": "Номер заказа",
-        "sku": "Артикул",
+        "productCode": "Продукт",
         "status": "Статус",
         "dueDate": "Срок выполнения"
       },
@@ -125,7 +126,7 @@
   },
   "orders": {
     "title": "Заказы",
-    "filterSku": "Фильтр артикул...",
+    "filterProduct": "Фильтр продукт...",
     "allLines": "Все линии",
     "allStatuses": "Все статусы",
     "statusesSelected": "{n} статус | {n} статуса | {n} статусов",
@@ -133,9 +134,9 @@
     "rowsSelected": "выбрано {n} строк.",
     "columns": {
       "orderNumber": "Номер заказа",
-      "sku": "Артикул",
-      "skuName": "Название",
-      "skuDescription": "Описание",
+      "productCode": "Продукт",
+      "productName": "Название",
+      "productDescription": "Описание",
       "priority": "Приоритет",
       "volume": "Объём",
       "produced": "Произведено",
@@ -194,7 +195,7 @@
     "description": "Добавить новый производственный заказ",
     "fields": {
       "orderNumber": "Номер заказа",
-      "sku": "Артикул",
+      "product": "Продукт",
       "volume": "Объём",
       "unit": "Единица",
       "priority": "Приоритет",
@@ -207,7 +208,7 @@
     },
     "placeholder": {
       "orderNumber": "WO-2024-001",
-      "selectSku": "Выберите артикул...",
+      "selectProduct": "Выберите продукт...",
       "selectUnit": "Ед. изм...",
       "volume": "500",
       "packagesPerCage": "50"
@@ -232,7 +233,8 @@
     "title": "Детали заказа",
     "loading": "Загрузка...",
     "cards": {
-      "sku": "Артикул",
+      "product": "Продукт",
+      "shift": "Смена",
       "status": "Статус",
       "priority": "Приоритет",
       "line": "Линия",
@@ -293,6 +295,14 @@
       "toast": {
         "saved": "Брак зафиксирован",
         "failed": "Ошибка фиксации брака"
+      }
+    },
+    "shiftProductions": {
+      "title": "Производство по сменам",
+      "columns": {
+        "shift": "Смена",
+        "date": "Дата",
+        "produced": "Произведено"
       }
     }
   },
@@ -509,6 +519,34 @@
       "description": "Язык интерфейса.",
       "en": "English",
       "ru": "Русский"
+    },
+    "shifts": {
+      "title": "График смен",
+      "description": "Настройте рабочие смены и паттерн ротации.",
+      "shiftsTitle": "Смены",
+      "shiftsDesc": "Переименуйте смены и задайте цвет для отображения в календаре.",
+      "name": "Название",
+      "color": "Цвет",
+      "scheduleTitle": "Настройка расписания",
+      "scheduleDesc": "Выберите паттерн ротации и задайте опорную дату и смену для расчёта календаря.",
+      "pattern": "Паттерн",
+      "startTime": "Время начала смены",
+      "referenceDate": "Опорная дата",
+      "referenceShift": "Опорная смена",
+      "patterns": {
+        "4on4off": "4 через 4 (16-дневный цикл)",
+        "dupont": "Дюпон (28-дневный цикл)",
+        "continental": "Континентал (12-дневный цикл)"
+      },
+      "calendarTitle": "Календарь смен",
+      "prevMonth": "Предыдущий месяц",
+      "nextMonth": "Следующий месяц",
+      "noSchedule": "Расписание не настроено",
+      "toast": {
+        "shiftSaved": "Смена обновлена",
+        "scheduleSaved": "Расписание сохранено",
+        "failed": "Ошибка сохранения"
+      }
     }
   },
   "notifications": {

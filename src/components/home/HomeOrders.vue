@@ -78,9 +78,9 @@ const columns: TableColumn<QueueEntry>[] = [
     cell: ({ row }) => h('span', { class: 'text-sm font-medium font-mono' }, row.original.order.orderNumber)
   },
   {
-    id: 'sku',
-    header: () => t('home.orders.columns.sku'),
-    cell: ({ row }) => h('span', { class: 'text-sm' }, row.original.order.sku)
+    id: 'productCode',
+    header: () => t('home.orders.columns.productCode'),
+    cell: ({ row }) => h('span', { class: 'text-sm' }, row.original.order.productCode)
   },
   {
     id: 'status',

@@ -81,10 +81,10 @@ export interface Uom {
 export interface Order {
   id: number;
   orderNumber: string;
-  sku: string;
-  skuName: string | null;
-  skuNameEng: string | null;
-  skuDescription: string | null;
+  productCode: string;
+  productName: string | null;
+  productNameEng: string | null;
+  productDescription: string | null;
   status: OrderStatus;
   priority: OrderPriority;
   volume: number;
@@ -115,7 +115,7 @@ export interface CageEntry {
 export interface OrderDetail {
   id: number;
   orderNumber: string;
-  sku: string;
+  productCode: string;
   priority: OrderPriority;
   volume: number;
   uomCode: string;
@@ -135,7 +135,21 @@ export interface OrderDetail {
   pkgProduced: number;
   wasteQuantity: number | null;
   goodQuantity: number | null;
+  shiftId: number | null;
+  shiftCode: string | null;
+  shiftName: string | null;
+  shiftColor: string | null;
   cages: CageEntry[];
+  shiftProductions: ShiftProduction[];
+}
+
+export interface ShiftProduction {
+  shiftId: number;
+  shiftCode: string;
+  shiftName: string;
+  shiftColor: string;
+  date: string;
+  produced: number;
 }
 
 export interface ProductionLine {
@@ -143,13 +157,22 @@ export interface ProductionLine {
   name: string;
 }
 
-export interface Sku {
+export interface Shift {
   id: number;
   code: string;
   name: string;
-  nameEng: string | null;
-  unit: string;
-  pcsInPack: number | null;
+  color: string;
+  sortOrder: number;
+}
+
+export interface ShiftSchedule {
+  id: number;
+  pattern: string;
+  startTime: string;
+  referenceDate: string;
+  referenceShiftId: number;
+  referenceShiftCode: string | null;
+  updatedAt: string | null;
 }
 
 export interface DbUser {
@@ -207,10 +230,15 @@ export interface AppSetting {
 export interface ProductListItem {
   id: number;
   number: string;
+  name: string | null;
+  nameEng: string | null;
   sku: string | null;
   description: string | null;
   descriptionEng: string | null;
   code: string | null;
+  unit: string | null;
+  pcsInPack: number | null;
+  packsOnPallet: number | null;
 }
 
 export interface GeneralSp {
@@ -325,8 +353,8 @@ export interface Material {
 
 export interface WasteReportRow {
   orderNumber: string;
-  skuCode: string | null;
-  skuName: string | null;
+  productCode: string | null;
+  productName: string | null;
   startTs: string;
   endTs: string;
   durationH: number;
@@ -339,8 +367,8 @@ export interface WasteReportRow {
 
 export interface PkfReportRow {
   orderNumber: string;
-  skuCode: string | null;
-  skuName: string | null;
+  productCode: string | null;
+  productName: string | null;
   startTs: string;
   endTs: string;
   durationH: number;
@@ -353,8 +381,8 @@ export interface PkfReportRow {
 
 export interface EnergyReportRow {
   orderNumber: string;
-  skuCode: string | null;
-  skuName: string | null;
+  productCode: string | null;
+  productName: string | null;
   startTs: string;
   endTs: string;
   durationH: number;

@@ -14,6 +14,7 @@
     "settings": "Settings",
     "general": "General",
     "notifications": "Notifications",
+    "shifts": "Shifts",
     "production": "Production",
     "goTo": "Go to"
   },
@@ -110,7 +111,7 @@
       "columns": {
         "position": "Position",
         "orderNumber": "Order No.",
-        "sku": "SKU",
+        "productCode": "Product",
         "status": "Status",
         "dueDate": "Due Date"
       },
@@ -125,7 +126,7 @@
   },
   "orders": {
     "title": "Orders",
-    "filterSku": "Filter SKU...",
+    "filterProduct": "Filter product...",
     "allLines": "All Lines",
     "allStatuses": "All Statuses",
     "statusesSelected": "{n} status | {n} statuses",
@@ -133,9 +134,9 @@
     "rowsSelected": "{n} row(s) selected.",
     "columns": {
       "orderNumber": "Order No.",
-      "sku": "SKU",
-      "skuName": "SKU Name",
-      "skuDescription": "Description",
+      "productCode": "Product",
+      "productName": "Product Name",
+      "productDescription": "Description",
       "priority": "Priority",
       "volume": "Volume",
       "produced": "Produced",
@@ -194,7 +195,7 @@
     "description": "Add a new production order",
     "fields": {
       "orderNumber": "Order Number",
-      "sku": "SKU",
+      "product": "Product",
       "volume": "Volume",
       "unit": "Unit",
       "priority": "Priority",
@@ -207,7 +208,7 @@
     },
     "placeholder": {
       "orderNumber": "WO-2024-001",
-      "selectSku": "Select a SKU...",
+      "selectProduct": "Select a product...",
       "selectUnit": "Unit...",
       "volume": "500",
       "packagesPerCage": "50"
@@ -232,7 +233,8 @@
     "title": "Order Details",
     "loading": "Loading...",
     "cards": {
-      "sku": "SKU",
+      "product": "Product",
+      "shift": "Shift",
       "status": "Status",
       "priority": "Priority",
       "line": "Line",
@@ -293,6 +295,14 @@
       "toast": {
         "saved": "Waste recorded",
         "failed": "Failed to record waste"
+      }
+    },
+    "shiftProductions": {
+      "title": "Production by Shift",
+      "columns": {
+        "shift": "Shift",
+        "date": "Date",
+        "produced": "Produced"
       }
     }
   },
@@ -509,6 +519,34 @@
       "description": "Interface display language.",
       "en": "English",
       "ru": "Русский"
+    },
+    "shifts": {
+      "title": "Shift Schedule",
+      "description": "Configure work shifts and rotation pattern.",
+      "shiftsTitle": "Shifts",
+      "shiftsDesc": "Rename shifts and set their colour for calendar display.",
+      "name": "Name",
+      "color": "Colour",
+      "scheduleTitle": "Schedule Configuration",
+      "scheduleDesc": "Choose a rotation pattern and set the reference date/shift to anchor the calendar.",
+      "pattern": "Pattern",
+      "startTime": "Shift Start Time",
+      "referenceDate": "Reference Date",
+      "referenceShift": "Reference Shift",
+      "patterns": {
+        "4on4off": "4 on / 4 off (16-day cycle)",
+        "dupont": "DuPont (28-day cycle)",
+        "continental": "Continental (12-day cycle)"
+      },
+      "calendarTitle": "Shift Calendar",
+      "prevMonth": "Previous month",
+      "nextMonth": "Next month",
+      "noSchedule": "No schedule configured",
+      "toast": {
+        "shiftSaved": "Shift updated",
+        "scheduleSaved": "Schedule saved",
+        "failed": "Failed to save"
+      }
     }
   },
   "notifications": {

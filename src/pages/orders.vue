@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useTemplateRef, h, ref, computed, watch, resolveComponent, onMounted } from 'vue'
+import { useStorage } from '@vueuse/core'
 import { upperFirst } from 'scule'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
@@ -30,10 +31,10 @@ const { visibleLines } = useSelectedLines()
 onMounted(fetchLines)
 
 const columnFilters = ref([{
-  id: 'sku',
+  id: 'productCode',
   value: ''
 }])
-const columnVisibility = ref({ priority: false, skuName: false, skuDescription: false, plannedCompleteAt: false })
+const columnVisibility = useStorage('mes_orders_cols', { priority: false, productName: false, productDescription: false, plannedCompleteAt: false })
 const rowSelection = ref({})
 
 const data = ref<Order[]>([])
@@ -173,14 +174,14 @@ const columns = computed<TableColumn<Order>[]>(() => [
       })
   },
   {
-    accessorKey: 'sku',
+    accessorKey: 'productCode',
     header: ({ column }) => {
       const isSorted = column.getIsSorted()
 
       return h(UButton, {
         color: 'neutral',
         variant: 'ghost',
-        label: t('orders.columns.sku'),
+        label: t('orders.columns.productCode'),
         icon: isSorted
           ? isSorted === 'asc'
             ? 'i-lucide-arrow-up-narrow-wide'
@@ -192,14 +193,14 @@ const columns = computed<TableColumn<Order>[]>(() => [
     }
   },
   {
-    accessorKey: 'skuName',
-    header: () => t('orders.columns.skuName'),
-    cell: ({ row }) => localize(row.original.skuName, row.original.skuNameEng) ?? '—'
+    accessorKey: 'productName',
+    header: () => t('orders.columns.productName'),
+    cell: ({ row }) => localize(row.original.productName, row.original.productNameEng) ?? '—'
   },
   {
-    accessorKey: 'skuDescription',
-    header: () => t('orders.columns.skuDescription'),
-    cell: ({ row }) => row.original.skuDescription ?? '—'
+    accessorKey: 'productDescription',
+    header: () => t('orders.columns.productDescription'),
+    cell: ({ row }) => row.original.productDescription ?? '—'
   },
   {
     accessorKey: 'priority',
@@ -416,12 +417,12 @@ watch(() => lineFilter.value, (newVal) => {
   col?.setFilterValue(newVal === 'all' ? undefined : Number(newVal))
 })
 
-const sku = computed({
+const productFilter = computed({
   get: (): string => {
-    return (table.value?.tableApi?.getColumn('sku')?.getFilterValue() as string) || ''
+    return (table.value?.tableApi?.getColumn('productCode')?.getFilterValue() as string) || ''
   },
   set: (value: string) => {
-    table.value?.tableApi?.getColumn('sku')?.setFilterValue(value || undefined)
+    table.value?.tableApi?.getColumn('productCode')?.setFilterValue(value || undefined)
   }
 })
 
@@ -452,10 +453,10 @@ function clearRowSelection() {
     <template #body>
       <div class="flex flex-wrap items-center justify-between gap-1.5">
         <UInput
-          v-model="sku"
+          v-model="productFilter"
           class="max-w-sm"
           icon="i-lucide-search"
-          :placeholder="t('orders.filterSku')"
+          :placeholder="t('orders.filterProduct')"
         />
 
         <div class="flex flex-wrap items-center gap-1.5">

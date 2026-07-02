@@ -14,6 +14,10 @@ const links = computed(() => [[{
   label: t('nav.notifications'),
   icon: 'i-lucide-bell',
   to: '/settings/notifications'
+}, {
+  label: t('nav.shifts'),
+  icon: 'i-lucide-clock',
+  to: '/settings/shifts'
 }]] satisfies NavigationMenuItem[][])
 </script>
 

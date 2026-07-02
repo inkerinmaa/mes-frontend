@@ -43,7 +43,7 @@ const allOrders = ref<Order[]>([])
 const orderOptions = computed(() =>
   allOrders.value
     .filter(o => o.line === lineId.value && o.status === 'completed')
-    .map(o => ({ label: `${o.orderNumber} — ${o.sku}`, value: o.orderNumber }))
+    .map(o => ({ label: `${o.orderNumber} — ${o.productCode}`, value: o.orderNumber }))
 )
 
 async function fetchOrders() {
@@ -86,14 +86,14 @@ const columns: TableColumn<PkfReportRow>[] = [
     cell: ({ row }) => h('span', { class: 'font-mono text-sm' }, row.original.orderNumber)
   },
   {
-    accessorKey: 'skuCode',
+    accessorKey: 'productCode',
     header: () => t('reports.pkf.columns.sku'),
-    cell: ({ row }) => h('span', { class: 'text-sm' }, row.original.skuCode ?? '—')
+    cell: ({ row }) => h('span', { class: 'text-sm' }, row.original.productCode ?? '—')
   },
   {
-    accessorKey: 'skuName',
+    accessorKey: 'productName',
     header: () => t('reports.pkf.columns.product'),
-    cell: ({ row }) => h('span', { class: 'text-sm text-muted' }, row.original.skuName ?? '—')
+    cell: ({ row }) => h('span', { class: 'text-sm text-muted' }, row.original.productName ?? '—')
   },
   {
     accessorKey: 'startTs',
@@ -144,7 +144,7 @@ function exportCsv() {
     'Basalt (t)', 'Binder (kg)', 'Wool (t)', 'Waste (kg)', 'Efficiency (%)'
   ]
   const csvRows = rows.value.map(r => [
-    r.orderNumber, r.skuCode ?? '', r.skuName ?? '',
+    r.orderNumber, r.productCode ?? '', r.productName ?? '',
     r.startTs, r.endTs, r.durationH.toFixed(1),
     r.basaltT.toFixed(3), r.binderKg.toFixed(1), r.woolT.toFixed(3),
     r.wasteKg.toFixed(1), r.avgEfficiency.toFixed(1)

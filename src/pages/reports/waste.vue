@@ -42,7 +42,7 @@ const allOrders = ref<Order[]>([])
 const orderOptions = computed(() =>
   allOrders.value
     .filter(o => o.line === lineId.value && o.status === 'completed')
-    .map(o => ({ label: `${o.orderNumber} — ${o.sku}`, value: o.orderNumber }))
+    .map(o => ({ label: `${o.orderNumber} — ${o.productCode}`, value: o.orderNumber }))
 )
 
 async function fetchOrders() {
@@ -85,14 +85,14 @@ const columns: TableColumn<WasteReportRow>[] = [
     cell: ({ row }) => h('span', { class: 'font-mono text-sm' }, row.original.orderNumber)
   },
   {
-    accessorKey: 'skuCode',
+    accessorKey: 'productCode',
     header: () => t('reports.waste.columns.sku'),
-    cell: ({ row }) => h('span', { class: 'text-sm' }, row.original.skuCode ?? '—')
+    cell: ({ row }) => h('span', { class: 'text-sm' }, row.original.productCode ?? '—')
   },
   {
-    accessorKey: 'skuName',
+    accessorKey: 'productName',
     header: () => t('reports.waste.columns.product'),
-    cell: ({ row }) => h('span', { class: 'text-sm text-muted' }, row.original.skuName ?? '—')
+    cell: ({ row }) => h('span', { class: 'text-sm text-muted' }, row.original.productName ?? '—')
   },
   {
     accessorKey: 'startTs',
@@ -143,7 +143,7 @@ function exportCsv() {
     'Trimming (kg)', 'Startup (kg)', 'Rejected (kg)', 'Total (kg)', 'Waste %'
   ]
   const csvRows = rows.value.map(r => [
-    r.orderNumber, r.skuCode ?? '', r.skuName ?? '',
+    r.orderNumber, r.productCode ?? '', r.productName ?? '',
     r.startTs, r.endTs, r.durationH.toFixed(1),
     r.trimmingKg.toFixed(1), r.startupKg.toFixed(1),
     r.rejectedKg.toFixed(1), r.totalKg.toFixed(1), r.wastePct.toFixed(1)

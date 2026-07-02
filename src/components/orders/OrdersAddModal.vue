@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import * as z from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import { apiFetch } from '../../utils/api'
-import type { Sku, Uom } from '../../types'
+import type { ProductListItem, Uom } from '../../types'
 import { useLines } from '../../composables/useLines'
 import { useSelectedLines } from '../../composables/useSelectedLines'
 import { useLocalizedField } from '../../composables/useLocalizedField'
@@ -14,12 +14,12 @@ const { localize } = useLocalizedField()
 
 const emit = defineEmits<{ created: [] }>()
 
-let skuCache: Sku[] | null = null
+let productCache: ProductListItem[] | null = null
 let uomCache: Uom[] | null = null
 
 const schema = z.object({
   orderNumber:       z.string().min(1, 'Required'),
-  skuCode:           z.string().min(1, 'Select a SKU'),
+  productCode:       z.string().min(1, 'Select a product'),
   volume:            z.coerce.number().positive('Must be greater than 0'),
   uomCode:           z.string().min(1, 'Select a unit'),
   priority:          z.string(),
@@ -35,13 +35,13 @@ type Schema = z.output<typeof schema>
 
 const open = ref(false)
 const isSubmitting = ref(false)
-const skus = ref<Sku[]>([])
+const products = ref<ProductListItem[]>([])
 const uoms = ref<Uom[]>([])
 const loadError = ref('')
 
 const state = reactive<Partial<Schema>>({
   orderNumber:       '',
-  skuCode:           undefined,
+  productCode:       undefined,
   volume:            undefined,
   uomCode:           undefined,
   priority:          'Medium',
@@ -55,8 +55,8 @@ const state = reactive<Partial<Schema>>({
 
 onMounted(async () => {
   try {
-    if (!skuCache) skuCache = await apiFetch<Sku[]>('/skus')
-    skus.value = skuCache!
+    if (!productCache) productCache = await apiFetch<ProductListItem[]>('/products')
+    products.value = productCache!
 
     if (!uomCache) uomCache = await apiFetch<Uom[]>('/uoms')
     uoms.value = uomCache!
@@ -64,7 +64,7 @@ onMounted(async () => {
     await fetchLines()
   } catch (e) {
     loadError.value = 'Failed to load form data'
-    console.error('Failed to load SKUs/UOMs:', e)
+    console.error('Failed to load products/UOMs:', e)
   }
 })
 
@@ -72,19 +72,19 @@ const toast = useToast()
 const { lineName, fetchLines, lines } = useLines()
 const { visibleLines } = useSelectedLines()
 
-const selectedSku = computed(() => skus.value.find(s => s.code === state.skuCode))
+const selectedProduct = computed(() => products.value.find(p => p.number === state.productCode))
 const isWiredMattsLine = computed(() => {
   const line = lines.value.find(l => l.id === Number(state.lineId))
   return line?.name === 'Wired Matts'
 })
 
 // Wired Matts orders always use cage tracking, regardless of UOM; cage size
-// comes from the SKU's packaging spec, not from user input.
-watch([isWiredMattsLine, selectedSku], () => {
+// comes from the product's packaging spec, not from user input.
+watch([isWiredMattsLine, selectedProduct], () => {
   if (isWiredMattsLine.value) {
     state.cage = true
-    state.cageSize = selectedSku.value?.pcsInPack && selectedSku.value.pcsInPack > 0
-      ? selectedSku.value.pcsInPack
+    state.cageSize = selectedProduct.value?.pcsInPack && selectedProduct.value.pcsInPack > 0
+      ? selectedProduct.value.pcsInPack
       : 50
   } else {
     state.cage = false
@@ -95,7 +95,7 @@ watch([isWiredMattsLine, selectedSku], () => {
 function resetForm() {
   Object.assign(state, {
     orderNumber:       '',
-    skuCode:           undefined,
+    productCode:       undefined,
     volume:            undefined,
     uomCode:           undefined,
     priority:          'Medium',
@@ -115,7 +115,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       method: 'POST',
       body: JSON.stringify({
         orderNumber:       event.data.orderNumber,
-        skuCode:           event.data.skuCode,
+        productCode:       event.data.productCode,
         lineId:            Number(event.data.lineId),
         volume:            Number(event.data.volume),
         uomCode:           event.data.uomCode,
@@ -129,7 +129,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     })
     toast.add({
       title: t('newOrder.toast.created'),
-      description: `${event.data.orderNumber} — ${event.data.skuCode} × ${event.data.volume} ${event.data.uomCode} on ${lineName(Number(event.data.lineId))}`,
+      description: `${event.data.orderNumber} — ${event.data.productCode} × ${event.data.volume} ${event.data.uomCode} on ${lineName(Number(event.data.lineId))}`,
       color: 'success'
     })
     open.value = false
@@ -155,11 +155,11 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
           <UInput v-model="state.orderNumber" :placeholder="t('newOrder.placeholder.orderNumber')" class="w-full" />
         </UFormField>
 
-        <UFormField :label="t('newOrder.fields.sku')" name="skuCode">
+        <UFormField :label="t('newOrder.fields.product')" name="productCode">
           <USelect
-            v-model="state.skuCode"
-            :items="skus.map(s => ({ label: `${s.code} — ${localize(s.name, s.nameEng)}`, value: s.code }))"
-            :placeholder="t('newOrder.placeholder.selectSku')"
+            v-model="state.productCode"
+            :items="products.map(p => ({ label: `${p.number} — ${localize(p.name, p.nameEng) ?? p.description ?? p.number}`, value: p.number }))"
+            :placeholder="t('newOrder.placeholder.selectProduct')"
             class="w-full"
           />
         </UFormField>
