@@ -9,6 +9,8 @@ const { t } = useI18n()
 const { isAdmin } = useMesUser()
 const toast = useToast()
 
+const DAY_NIGHT_PATTERN = '2on2off2night2off'
+
 const shifts = ref<Shift[]>([])
 const schedule = ref<ShiftSchedule | null>(null)
 
@@ -17,11 +19,14 @@ const schedEdit = reactive({
   pattern: '4on4off',
   startTime: '08:00',
   referenceDate: '',
-  referenceShiftId: 0
+  referenceShiftId: 0,
+  shiftReferences: {} as Record<number, string>  // shiftId → YYYY-MM-DD
 })
 
 const savingShift = ref<Record<number, boolean>>({})
 const savingSchedule = ref(false)
+
+const isDayNightPattern = computed(() => schedEdit.pattern === DAY_NIGHT_PATTERN)
 
 const calendarDate = ref(new Date())
 const calendarYear = computed(() => calendarDate.value.getFullYear())
@@ -38,7 +43,7 @@ function nextMonth() {
   calendarDate.value = d
 }
 
-// Mirrors ShiftRepository.GetCurrentShiftIdAsync cycle arrays exactly
+// Mirrors ShiftRepository cycle arrays for standard patterns
 function getCycleDays(pattern: string): number[] {
   switch (pattern) {
     case '4on4off':    return [0,0,0,0, 1,1,1,1, 2,2,2,2, 3,3,3,3]
@@ -71,10 +76,38 @@ function getShiftForDate(date: Date, sch: ShiftSchedule): Shift | null {
   return sortedShifts[shiftIndex]
 }
 
+// Day/Night pattern: 8-day cycle per shift — Day/Day/Off/Off/Night/Night/Off/Off
+const DAY_NIGHT_SLOTS = ['day', 'day', 'off', 'off', 'night', 'night', 'off', 'off']
+
+function getShiftsForDate(date: Date): { day: Shift | null; night: Shift | null } {
+  const sch = schedule.value!
+  const result: { day: Shift | null; night: Shift | null } = { day: null, night: null }
+  if (!sch.shiftReferences?.length) return result
+
+  const target = new Date(date)
+  target.setHours(0, 0, 0, 0)
+
+  for (const ref of sch.shiftReferences) {
+    if (!ref.referenceDate) continue
+    const refDate = new Date(ref.referenceDate)
+    refDate.setHours(0, 0, 0, 0)
+    const daysDiff = Math.round((target.getTime() - refDate.getTime()) / 86400000)
+    const cyclePos = ((daysDiff % 8) + 8) % 8
+    const slot = DAY_NIGHT_SLOTS[cyclePos]
+    const shift = shifts.value.find(s => s.id === ref.shiftId) ?? null
+    if (slot === 'day') result.day = shift
+    else if (slot === 'night') result.night = shift
+  }
+
+  return result
+}
+
 interface CalendarCell {
   day: number
   date: Date
   shift: Shift | null
+  dayShift: Shift | null
+  nightShift: Shift | null
   isToday: boolean
   otherMonth: boolean
 }
@@ -88,31 +121,34 @@ const calendarDays = computed((): CalendarCell[] => {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   const cells: CalendarCell[] = []
+  const isDN = schedule.value.pattern === DAY_NIGHT_PATTERN
+
+  const emptyCell = (d: Date): CalendarCell => ({
+    day: d.getDate(), date: d, shift: null, dayShift: null, nightShift: null, isToday: false, otherMonth: true
+  })
 
   // Pad start (Mon-based week: Mon=0 … Sun=6)
   let startDow = firstDay.getDay()
   startDow = startDow === 0 ? 6 : startDow - 1
   for (let i = startDow - 1; i >= 0; i--) {
-    const d = new Date(year, month, -i)
-    cells.push({ day: d.getDate(), date: d, shift: null, isToday: false, otherMonth: true })
+    cells.push(emptyCell(new Date(year, month, -i)))
   }
 
   for (let d = 1; d <= lastDay.getDate(); d++) {
     const date = new Date(year, month, d)
-    cells.push({
-      day: d, date,
-      shift: getShiftForDate(date, schedule.value!),
-      isToday: date.getTime() === today.getTime(),
-      otherMonth: false
-    })
+    if (isDN) {
+      const { day: dayShift, night: nightShift } = getShiftsForDate(date)
+      cells.push({ day: d, date, shift: null, dayShift, nightShift, isToday: date.getTime() === today.getTime(), otherMonth: false })
+    } else {
+      cells.push({ day: d, date, shift: getShiftForDate(date, schedule.value!), dayShift: null, nightShift: null, isToday: date.getTime() === today.getTime(), otherMonth: false })
+    }
   }
 
   // Pad end to complete the grid
   const totalCells = Math.ceil(cells.length / 7) * 7
   let nextDay = 1
   while (cells.length < totalCells) {
-    const d = new Date(year, month + 1, nextDay++)
-    cells.push({ day: d.getDate(), date: d, shift: null, isToday: false, otherMonth: true })
+    cells.push(emptyCell(new Date(year, month + 1, nextDay++)))
   }
   return cells
 })
@@ -122,7 +158,8 @@ const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const patternItems = computed(() => [
   { label: t('settings.shifts.patterns.4on4off'), value: '4on4off' },
   { label: t('settings.shifts.patterns.dupont'), value: 'dupont' },
-  { label: t('settings.shifts.patterns.continental'), value: 'continental' }
+  { label: t('settings.shifts.patterns.continental'), value: 'continental' },
+  { label: t('settings.shifts.patterns.2on2off2night2off'), value: '2on2off2night2off' }
 ])
 
 const shiftSelectItems = computed(() =>
@@ -146,10 +183,12 @@ onMounted(async () => {
     schedule.value = fetchedSchedule
     schedEdit.pattern = fetchedSchedule.pattern
     schedEdit.startTime = fetchedSchedule.startTime.slice(0, 5)
-    schedEdit.referenceDate = fetchedSchedule.referenceDate
-    schedEdit.referenceShiftId = fetchedSchedule.referenceShiftId
+    schedEdit.referenceDate = fetchedSchedule.referenceDate ?? ''
+    schedEdit.referenceShiftId = fetchedSchedule.referenceShiftId ?? (fetchedShifts[0]?.id ?? 0)
+    for (const ref of fetchedSchedule.shiftReferences ?? []) {
+      schedEdit.shiftReferences[ref.shiftId] = ref.referenceDate ?? ''
+    }
   } else if (fetchedShifts.length > 0) {
-    // No schedule yet — default select to first shift so USelect isn't empty
     schedEdit.referenceShiftId = fetchedShifts[0].id
   }
 })
@@ -174,22 +213,44 @@ async function saveShift(shift: Shift) {
 }
 
 async function saveSchedule() {
-  const refId = Number(schedEdit.referenceShiftId)
-  if (!refId || !schedEdit.referenceDate) {
-    toast.add({ title: t('settings.shifts.toast.failed'), color: 'error' })
-    return
+  if (isDayNightPattern.value) {
+    const dates = shifts.value.map(s => schedEdit.shiftReferences[s.id]).filter(Boolean)
+    if (dates.length !== shifts.value.length) {
+      toast.add({ title: t('settings.shifts.toast.allDatesRequired'), color: 'error' })
+      return
+    }
+    const uniqueDates = new Set(dates)
+    if (uniqueDates.size !== dates.length) {
+      toast.add({ title: t('settings.shifts.toast.duplicateDates'), color: 'error' })
+      return
+    }
+  } else {
+    const refId = Number(schedEdit.referenceShiftId)
+    if (!refId || !schedEdit.referenceDate) {
+      toast.add({ title: t('settings.shifts.toast.failed'), color: 'error' })
+      return
+    }
   }
+
   savingSchedule.value = true
   try {
-    await apiFetch('/shifts/schedule', {
-      method: 'PUT',
-      body: JSON.stringify({
-        pattern: schedEdit.pattern,
-        startTime: schedEdit.startTime,
-        referenceDate: schedEdit.referenceDate,
-        referenceShiftId: refId
-      })
-    })
+    const body: Record<string, unknown> = {
+      pattern: schedEdit.pattern,
+      startTime: schedEdit.startTime
+    }
+    if (isDayNightPattern.value) {
+      body.referenceDate = null
+      body.referenceShiftId = null
+      body.shiftReferences = shifts.value.map(s => ({
+        shiftId: s.id,
+        referenceDate: schedEdit.shiftReferences[s.id]
+      }))
+    } else {
+      body.referenceDate = schedEdit.referenceDate
+      body.referenceShiftId = Number(schedEdit.referenceShiftId)
+      body.shiftReferences = null
+    }
+    await apiFetch('/shifts/schedule', { method: 'PUT', body: JSON.stringify(body) })
     schedule.value = await apiFetch<ShiftSchedule>('/shifts/schedule')
     toast.add({ title: t('settings.shifts.toast.scheduleSaved'), color: 'success' })
   } catch {
@@ -262,14 +323,42 @@ async function saveSchedule() {
       <UFormField :label="t('settings.shifts.startTime')" class="flex max-sm:flex-col justify-between items-center gap-4">
         <UInput v-model="schedEdit.startTime" type="time" :disabled="!isAdmin" class="w-40" />
       </UFormField>
-      <USeparator />
-      <UFormField :label="t('settings.shifts.referenceDate')" class="flex max-sm:flex-col justify-between items-center gap-4">
-        <UInput v-model="schedEdit.referenceDate" type="date" :disabled="!isAdmin" class="w-48" />
-      </UFormField>
-      <USeparator />
-      <UFormField :label="t('settings.shifts.referenceShift')" class="flex max-sm:flex-col justify-between items-center gap-4">
-        <USelect v-model="schedEdit.referenceShiftId" :items="shiftSelectItems" :disabled="!isAdmin" class="w-48" />
-      </UFormField>
+
+      <!-- Standard patterns: single reference date + reference shift -->
+      <template v-if="!isDayNightPattern">
+        <USeparator />
+        <UFormField :label="t('settings.shifts.referenceDate')" class="flex max-sm:flex-col justify-between items-center gap-4">
+          <UInput v-model="schedEdit.referenceDate" type="date" :disabled="!isAdmin" class="w-48" />
+        </UFormField>
+        <USeparator />
+        <UFormField :label="t('settings.shifts.referenceShift')" class="flex max-sm:flex-col justify-between items-center gap-4">
+          <USelect v-model="schedEdit.referenceShiftId" :items="shiftSelectItems" :disabled="!isAdmin" class="w-48" />
+        </UFormField>
+      </template>
+
+      <!-- Day/Night pattern: one reference date per shift -->
+      <template v-else>
+        <USeparator />
+        <p class="text-xs text-muted mb-3">{{ t('settings.shifts.shiftRefDatesDesc') }}</p>
+        <div class="space-y-3">
+          <div v-for="shift in shifts" :key="shift.id" class="flex items-center gap-3">
+            <span
+              class="inline-flex items-center justify-center w-7 h-7 rounded-full text-white text-xs font-bold shrink-0"
+              :style="{ background: shiftEdits[shift.id]?.color ?? shift.color }"
+            >
+              {{ shift.code }}
+            </span>
+            <span class="text-sm font-medium text-highlighted w-28 shrink-0">{{ shiftEdits[shift.id]?.name ?? shift.name }}</span>
+            <UInput
+              v-model="schedEdit.shiftReferences[shift.id]"
+              type="date"
+              :disabled="!isAdmin"
+              class="w-48"
+              :placeholder="t('settings.shifts.cycleStartDate')"
+            />
+          </div>
+        </div>
+      </template>
     </UPageCard>
   </div>
 
@@ -304,6 +393,18 @@ async function saveSchedule() {
     <UPageCard variant="subtle">
       <p v-if="!schedule" class="text-sm text-muted text-center py-4">{{ t('settings.shifts.noSchedule') }}</p>
       <template v-else>
+        <!-- Legend for day/night pattern -->
+        <div v-if="schedule.pattern === DAY_NIGHT_PATTERN" class="flex flex-wrap gap-3 mb-3 text-xs text-muted">
+          <span class="flex items-center gap-1">
+            <span class="inline-block w-3 h-3 rounded-full bg-current opacity-60"></span>
+            {{ t('settings.shifts.legend.leftHalf') }}
+          </span>
+          <span>{{ t('settings.shifts.legend.dayPeriod') }} ({{ schedEdit.startTime }} – {{ (() => { const [h] = schedEdit.startTime.split(':'); return `${String((+h + 12) % 24).padStart(2,'0')}:00` })() }})</span>
+          <span class="mx-1">|</span>
+          <span>{{ t('settings.shifts.legend.rightHalf') }}</span>
+          <span>{{ t('settings.shifts.legend.nightPeriod') }}</span>
+        </div>
+
         <div class="grid grid-cols-7 gap-1 mb-1">
           <div v-for="wd in weekDays" :key="wd" class="text-xs text-muted text-center font-medium py-1">{{ wd }}</div>
         </div>
@@ -316,7 +417,13 @@ async function saveSchedule() {
               cell.otherMonth ? 'opacity-25' : '',
               cell.isToday ? 'ring-2 ring-primary ring-inset' : ''
             ]"
-            :style="!cell.otherMonth && cell.shift ? { background: cell.shift.color + '22' } : {}"
+            :style="!cell.otherMonth
+              ? (cell.shift
+                  ? { background: cell.shift.color + '22' }
+                  : (cell.dayShift || cell.nightShift)
+                      ? { background: (cell.dayShift?.color ?? cell.nightShift?.color) + '22' }
+                      : {})
+              : {}"
           >
             <span
               class="text-xs font-medium block"
@@ -324,6 +431,8 @@ async function saveSchedule() {
             >
               {{ cell.day }}
             </span>
+
+            <!-- Standard pattern: single shift badge -->
             <div v-if="!cell.otherMonth && cell.shift" class="flex justify-center mt-1">
               <span
                 class="inline-flex items-center justify-center w-6 h-6 rounded-full text-white text-xs font-bold"
@@ -331,6 +440,18 @@ async function saveSchedule() {
               >
                 {{ cell.shift.code }}
               </span>
+            </div>
+
+            <!-- Day/Night pattern: split circle -->
+            <div
+              v-else-if="!cell.otherMonth && (cell.dayShift || cell.nightShift)"
+              class="flex justify-center mt-1"
+              :title="`${t('settings.shifts.dayShift')}: ${cell.dayShift?.code ?? '—'} / ${t('settings.shifts.nightShift')}: ${cell.nightShift?.code ?? '—'}`"
+            >
+              <div class="w-6 h-6 rounded-full overflow-hidden flex">
+                <div class="w-1/2 h-full" :style="{ background: cell.dayShift?.color ?? '#9ca3af' }"></div>
+                <div class="w-1/2 h-full" :style="{ background: cell.nightShift?.color ?? '#9ca3af' }"></div>
+              </div>
             </div>
           </div>
         </div>

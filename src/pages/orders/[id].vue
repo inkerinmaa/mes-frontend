@@ -308,7 +308,7 @@ const cageColumns: TableColumn<CageEntry>[] = [
           </UCard>
         </div>
 
-        <!-- Production progress -->
+        <!-- Production progress + shift breakdown -->
         <UCard class="shrink-0">
           <div class="space-y-2">
             <div class="flex justify-between text-sm">
@@ -322,6 +322,26 @@ const cageColumns: TableColumn<CageEntry>[] = [
             </div>
             <p v-if="progressPct > 100" class="text-xs text-warning font-medium">{{ t('orderDetail.progressBar.exceeded', { pct: progressPct }) }}</p>
             <p class="text-xs text-muted">{{ producedCaption }}</p>
+
+            <!-- Shift breakdown -->
+            <div v-if="order.shiftProductions.length" class="pt-2 border-t border-default space-y-1.5">
+              <p class="text-xs text-muted uppercase mb-1">{{ t('orderDetail.shiftProductions.title') }}</p>
+              <div
+                v-for="sp in order.shiftProductions"
+                :key="`${sp.shiftId}-${sp.date}`"
+                class="flex items-center justify-between text-sm"
+              >
+                <div class="flex items-center gap-2">
+                  <span
+                    class="inline-flex items-center justify-center w-5 h-5 rounded-full text-white text-xs font-bold shrink-0"
+                    :style="{ background: sp.shiftColor }"
+                  >{{ sp.shiftCode }}</span>
+                  <span class="text-muted">{{ sp.shiftName }}</span>
+                  <span class="text-xs text-dimmed">{{ new Date(sp.date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }) }}</span>
+                </div>
+                <span class="font-medium text-highlighted">{{ Number(sp.produced).toLocaleString() }} {{ order.uomCode }}</span>
+              </div>
+            </div>
           </div>
         </UCard>
 
@@ -387,32 +407,6 @@ const cageColumns: TableColumn<CageEntry>[] = [
               td: 'border-b border-default'
             }"
           />
-        </UCard>
-
-        <!-- Production by shift -->
-        <UCard v-if="order.shiftProductions.length" class="shrink-0">
-          <template #header>
-            <p class="text-xs text-muted uppercase">{{ t('orderDetail.shiftProductions.title') }}</p>
-          </template>
-          <div class="divide-y divide-default">
-            <div
-              v-for="sp in order.shiftProductions"
-              :key="`${sp.shiftId}-${sp.date}`"
-              class="flex items-center justify-between py-2 first:pt-0 last:pb-0"
-            >
-              <div class="flex items-center gap-2">
-                <span
-                  class="inline-flex items-center justify-center w-6 h-6 rounded-full text-white text-xs font-bold shrink-0"
-                  :style="{ background: sp.shiftColor }"
-                >{{ sp.shiftCode }}</span>
-                <span class="font-medium text-highlighted">{{ sp.shiftName }}</span>
-              </div>
-              <div class="flex items-center gap-4 text-sm text-muted">
-                <span>{{ new Date(sp.date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }) }}</span>
-                <span class="font-semibold text-highlighted">{{ Number(sp.produced).toLocaleString() }} {{ order.uomCode }}</span>
-              </div>
-            </div>
-          </div>
         </UCard>
 
         <!-- Comment -->

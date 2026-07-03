@@ -165,14 +165,23 @@ export interface Shift {
   sortOrder: number;
 }
 
+export interface ShiftReference {
+  shiftId: number;
+  shiftCode: string;
+  shiftName: string;
+  shiftColor: string;
+  referenceDate: string | null;
+}
+
 export interface ShiftSchedule {
   id: number;
   pattern: string;
   startTime: string;
-  referenceDate: string;
-  referenceShiftId: number;
+  referenceDate: string | null;
+  referenceShiftId: number | null;
   referenceShiftCode: string | null;
   updatedAt: string | null;
+  shiftReferences: ShiftReference[];
 }
 
 export interface DbUser {
