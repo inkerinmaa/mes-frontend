@@ -88,7 +88,7 @@ const period = ref<Period>('daily')
       <HomeStats         v-if="showStatsCards" :period="period" :range="range" :line="selectedLine" class="shrink-0" />
       <HomeStateTimeline v-if="showUptimeDiagram" :period="period" :range="range" :line="selectedLine" class="shrink-0" />
       <HomeChart         v-if="showEfficiencyChart" :period="period" :range="range" :line="selectedLine" class="shrink-0" />
-      <HomeSales         :line="selectedLine" class="shrink-0" />
+      <HomeEvents        :line="selectedLine" class="shrink-0" />
       <HomeOrders        :period="period" :range="range" :line="selectedLine" class="shrink-0" />
     </template>
   </UDashboardPanel>

@@ -104,9 +104,8 @@ async function addCage() {
   addingCage.value = true
   try {
     const cage = await apiFetch<CageEntry>(`/orders/${orderId.value}/cages`, { method: 'POST' })
-    order.value?.cages.unshift(cage)
-    if (order.value) order.value.producedPackages += cage.packages
     toast.add({ title: t('orderDetail.cages.toast.added', { n: cage.packages }), color: 'success' })
+    await fetchOrder()
   } catch (e: any) {
     toast.add({ title: t('orderDetail.cages.toast.addFailed'), description: e?.message, color: 'error' })
   } finally {
