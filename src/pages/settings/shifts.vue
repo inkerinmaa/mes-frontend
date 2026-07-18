@@ -15,9 +15,32 @@ const shifts = ref<Shift[]>([])
 const schedule = ref<ShiftSchedule | null>(null)
 
 const shiftEdits = ref<Record<number, { name: string; color: string }>>({})
+const TIMEZONES = [
+  { label: 'UTC',                      value: 'UTC' },
+  { label: 'Europe/Kaliningrad (UTC+2)', value: 'Europe/Kaliningrad' },
+  { label: 'Europe/Moscow (UTC+3)',     value: 'Europe/Moscow' },
+  { label: 'Europe/Minsk (UTC+3)',      value: 'Europe/Minsk' },
+  { label: 'Europe/Samara (UTC+4)',     value: 'Europe/Samara' },
+  { label: 'Asia/Yekaterinburg (UTC+5)', value: 'Asia/Yekaterinburg' },
+  { label: 'Asia/Omsk (UTC+6)',         value: 'Asia/Omsk' },
+  { label: 'Asia/Krasnoyarsk (UTC+7)', value: 'Asia/Krasnoyarsk' },
+  { label: 'Asia/Irkutsk (UTC+8)',      value: 'Asia/Irkutsk' },
+  { label: 'Asia/Yakutsk (UTC+9)',      value: 'Asia/Yakutsk' },
+  { label: 'Asia/Vladivostok (UTC+10)', value: 'Asia/Vladivostok' },
+  { label: 'Asia/Magadan (UTC+11)',     value: 'Asia/Magadan' },
+  { label: 'Asia/Kamchatka (UTC+12)',   value: 'Asia/Kamchatka' },
+  { label: 'Europe/Warsaw (UTC+1/+2)',  value: 'Europe/Warsaw' },
+  { label: 'Europe/Helsinki (UTC+2/+3)', value: 'Europe/Helsinki' },
+  { label: 'Europe/Istanbul (UTC+3)',   value: 'Europe/Istanbul' },
+  { label: 'Asia/Almaty (UTC+5)',       value: 'Asia/Almaty' },
+  { label: 'Asia/Tashkent (UTC+5)',     value: 'Asia/Tashkent' },
+  { label: 'Asia/Baku (UTC+4)',         value: 'Asia/Baku' },
+]
+
 const schedEdit = reactive({
   pattern: '4on4off',
   startTime: '08:00',
+  timezone: 'UTC',
   referenceDate: '',
   referenceShiftId: 0,
   shiftReferences: {} as Record<number, string>  // shiftId → YYYY-MM-DD
@@ -183,6 +206,7 @@ onMounted(async () => {
     schedule.value = fetchedSchedule
     schedEdit.pattern = fetchedSchedule.pattern
     schedEdit.startTime = fetchedSchedule.startTime.slice(0, 5)
+    schedEdit.timezone = fetchedSchedule.timezone ?? 'UTC'
     schedEdit.referenceDate = fetchedSchedule.referenceDate ?? ''
     schedEdit.referenceShiftId = fetchedSchedule.referenceShiftId ?? (fetchedShifts[0]?.id ?? 0)
     for (const ref of fetchedSchedule.shiftReferences ?? []) {
@@ -236,7 +260,8 @@ async function saveSchedule() {
   try {
     const body: Record<string, unknown> = {
       pattern: schedEdit.pattern,
-      startTime: schedEdit.startTime
+      startTime: schedEdit.startTime,
+      timezone: schedEdit.timezone
     }
     if (isDayNightPattern.value) {
       body.referenceDate = null
@@ -322,6 +347,10 @@ async function saveSchedule() {
       <USeparator />
       <UFormField :label="t('settings.shifts.startTime')" class="flex max-sm:flex-col justify-between items-center gap-4">
         <UInput v-model="schedEdit.startTime" type="time" :disabled="!isAdmin" class="w-40" />
+      </UFormField>
+      <USeparator />
+      <UFormField :label="t('settings.shifts.timezone')" class="flex max-sm:flex-col justify-between items-center gap-4">
+        <USelect v-model="schedEdit.timezone" :items="TIMEZONES" :disabled="!isAdmin" class="w-72" />
       </UFormField>
 
       <!-- Standard patterns: single reference date + reference shift -->

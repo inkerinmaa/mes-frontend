@@ -42,26 +42,36 @@ const columns: TableColumn<ProductListItem>[] = [
     cell: ({ row }) => h('span', { class: 'text-sm font-mono font-medium' }, row.original.number)
   },
   {
-    accessorKey: 'sku',
-    header: () => t('masterData.products.columns.sku'),
+    accessorKey: 'name',
+    header: () => t('masterData.products.columns.name'),
     cell: ({ row }) =>
       h(UButton, {
         variant: 'link',
         color: 'primary',
-        label: row.original.sku ?? '—',
+        label: localize(row.original.name, row.original.nameEng) ?? '—',
         class: 'px-0',
         onClick: () => openDetail(row.original.id)
       })
   },
   {
-    accessorKey: 'description',
-    header: () => t('masterData.products.columns.description'),
-    cell: ({ row }) => h('span', { class: 'text-sm' }, localize(row.original.description, row.original.descriptionEng) ?? '—')
+    accessorKey: 'groupName',
+    header: () => t('masterData.products.columns.group'),
+    cell: ({ row }) => h('span', { class: 'text-sm text-muted' }, localize(row.original.groupName, row.original.groupNameEng) ?? '—')
   },
   {
-    accessorKey: 'code',
-    header: () => t('masterData.products.columns.code'),
-    cell: ({ row }) => h('span', { class: 'text-sm text-muted' }, row.original.code ?? '—')
+    accessorKey: 'coverCode',
+    header: () => t('masterData.products.columns.coverCode'),
+    cell: ({ row }) => h('span', { class: 'text-sm text-muted font-mono' }, row.original.coverCode ?? '—')
+  },
+  {
+    accessorKey: 'thickness',
+    header: () => t('masterData.products.columns.thickness'),
+    cell: ({ row }) => h('span', { class: 'text-sm text-muted' }, row.original.thickness != null ? `${row.original.thickness} mm` : '—')
+  },
+  {
+    accessorKey: 'density',
+    header: () => t('masterData.products.columns.density'),
+    cell: ({ row }) => h('span', { class: 'text-sm text-muted' }, row.original.density != null ? `${row.original.density} kg/m³` : '—')
   },
   {
     id: 'actions',

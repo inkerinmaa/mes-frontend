@@ -12,9 +12,9 @@ import { apiFetch } from '../../utils/api'
 
 const { t } = useI18n()
 const { fullName, role, setFullName, isAdmin } = useMesUser()
-const { autoRefreshEnabled, refreshIntervalSeconds, showEfficiencyChart, showStatsCards, showUptimeDiagram, updateSetting } = useSettings()
+const { autoRefreshEnabled, refreshIntervalSeconds, showEfficiencyChart, showStatsCards, showUptimeDiagram, orderColorRunning, orderColorCompleted, orderColorQueued, updateSetting } = useSettings()
 const { locale, setLocale } = useLocale()
-const { lines, fetchLines } = useLines()
+const { lines, fetchLines, refreshLines } = useLines()
 const { selectedLineIds, setSelectedLines } = useSelectedLines()
 const toast = useToast()
 
@@ -77,6 +77,42 @@ const roleColor = computed(() => role.value === 'admin' ? 'primary' as const : '
 
 const isSubmitting = ref(false)
 const isSavingSystem = ref(false)
+const isSavingColors = ref(false)
+const isSavingLineControls = ref(false)
+
+// Per-line control toggles (admin only) — keyed by line id
+const lineControls = ref<Record<number, { orderControlEnabled: boolean; manualWasteEnabled: boolean }>>({})
+
+watch(lines, (val) => {
+  val.forEach(l => {
+    if (!(l.id in lineControls.value)) {
+      lineControls.value[l.id] = {
+        orderControlEnabled: l.orderControlEnabled,
+        manualWasteEnabled: l.manualWasteEnabled
+      }
+    }
+  })
+}, { immediate: true })
+
+async function saveLineControls() {
+  isSavingLineControls.value = true
+  try {
+    await Promise.all(
+      lines.value.map(l =>
+        apiFetch(`/lines/${l.id}/settings`, {
+          method: 'PATCH',
+          body: JSON.stringify(lineControls.value[l.id])
+        })
+      )
+    )
+    await refreshLines()
+    toast.add({ title: t('settings.lineControls.toast.saved'), color: 'success' })
+  } catch {
+    toast.add({ title: t('settings.lineControls.toast.failed'), color: 'error' })
+  } finally {
+    isSavingLineControls.value = false
+  }
+}
 
 // Local copies for the System form — committed only on Save
 const sysState = reactive({
@@ -87,12 +123,21 @@ const sysState = reactive({
   showUptimeDiagram: showUptimeDiagram.value
 })
 
+const colorsState = reactive({
+  running:   orderColorRunning.value,
+  completed: orderColorCompleted.value,
+  queued:    orderColorQueued.value
+})
+
 // Keep local copies in sync if settings load after mount
 watch(autoRefreshEnabled, (v) => { sysState.autoRefresh = v })
 watch(refreshIntervalSeconds, (v) => { sysState.intervalSeconds = v })
 watch(showEfficiencyChart, (v) => { sysState.showEfficiencyChart = v })
 watch(showStatsCards, (v) => { sysState.showStatsCards = v })
 watch(showUptimeDiagram, (v) => { sysState.showUptimeDiagram = v })
+watch(orderColorRunning,   (v) => { colorsState.running   = v })
+watch(orderColorCompleted, (v) => { colorsState.completed = v })
+watch(orderColorQueued,    (v) => { colorsState.queued    = v })
 
 async function saveSystemSettings() {
   if (sysState.intervalSeconds < 10 || sysState.intervalSeconds > 3600) {
@@ -111,6 +156,20 @@ async function saveSystemSettings() {
     toast.add({ title: t('settings.system.toast.failed'), color: 'error' })
   } finally {
     isSavingSystem.value = false
+  }
+}
+
+async function saveOrderColors() {
+  isSavingColors.value = true
+  try {
+    await updateSetting('order_color_running',   colorsState.running)
+    await updateSetting('order_color_completed', colorsState.completed)
+    await updateSetting('order_color_queued',    colorsState.queued)
+    toast.add({ title: t('settings.orderColors.toast.saved'), color: 'success' })
+  } catch {
+    toast.add({ title: t('settings.orderColors.toast.failed'), color: 'error' })
+  } finally {
+    isSavingColors.value = false
   }
 }
 
@@ -299,6 +358,85 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       >
         <USwitch v-model="sysState.showUptimeDiagram" :disabled="!isAdmin" />
       </UFormField>
+    </UPageCard>
+  </div>
+
+  <div v-if="isAdmin" class="mt-6">
+    <UPageCard
+      :title="t('settings.orderColors.title')"
+      :description="t('settings.orderColors.description')"
+      variant="naked"
+      orientation="horizontal"
+      class="mb-4"
+    >
+      <UButton
+        :label="t('common.saveChanges')"
+        color="neutral"
+        :loading="isSavingColors"
+        class="w-fit lg:ms-auto"
+        @click="saveOrderColors"
+      />
+    </UPageCard>
+    <UPageCard variant="subtle">
+      <UFormField :label="t('settings.orderColors.running')" class="flex max-sm:flex-col justify-between items-center gap-4">
+        <div class="flex items-center gap-3">
+          <input type="color" v-model="colorsState.running" class="w-10 h-8 rounded cursor-pointer border border-default" />
+          <span class="text-sm font-mono text-muted">{{ colorsState.running }}</span>
+        </div>
+      </UFormField>
+      <USeparator />
+      <UFormField :label="t('settings.orderColors.completed')" class="flex max-sm:flex-col justify-between items-center gap-4">
+        <div class="flex items-center gap-3">
+          <input type="color" v-model="colorsState.completed" class="w-10 h-8 rounded cursor-pointer border border-default" />
+          <span class="text-sm font-mono text-muted">{{ colorsState.completed }}</span>
+        </div>
+      </UFormField>
+      <USeparator />
+      <UFormField :label="t('settings.orderColors.queued')" class="flex max-sm:flex-col justify-between items-center gap-4">
+        <div class="flex items-center gap-3">
+          <input type="color" v-model="colorsState.queued" class="w-10 h-8 rounded cursor-pointer border border-default" />
+          <span class="text-sm font-mono text-muted">{{ colorsState.queued }}</span>
+        </div>
+      </UFormField>
+    </UPageCard>
+  </div>
+
+  <div v-if="isAdmin" class="mt-6">
+    <UPageCard
+      :title="t('settings.lineControls.title')"
+      :description="t('settings.lineControls.description')"
+      variant="naked"
+      orientation="horizontal"
+      class="mb-4"
+    >
+      <UButton
+        :label="t('common.saveChanges')"
+        color="neutral"
+        :loading="isSavingLineControls"
+        class="w-fit lg:ms-auto"
+        @click="saveLineControls"
+      />
+    </UPageCard>
+    <UPageCard variant="subtle">
+      <div class="space-y-0">
+        <div
+          v-for="(line, idx) in lines"
+          :key="line.id"
+        >
+          <USeparator v-if="idx > 0" />
+          <div class="flex items-center justify-between py-3">
+            <span class="text-sm font-medium text-highlighted w-32">{{ line.name }}</span>
+            <div class="flex items-center gap-8">
+              <UFormField :label="t('settings.lineControls.orderControl')" class="flex items-center gap-3 flex-row-reverse">
+                <USwitch v-if="lineControls[line.id]" v-model="lineControls[line.id].orderControlEnabled" />
+              </UFormField>
+              <UFormField :label="t('settings.lineControls.manualWaste')" class="flex items-center gap-3 flex-row-reverse">
+                <USwitch v-if="lineControls[line.id]" v-model="lineControls[line.id].manualWasteEnabled" />
+              </UFormField>
+            </div>
+          </div>
+        </div>
+      </div>
     </UPageCard>
   </div>
 

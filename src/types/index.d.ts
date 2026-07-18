@@ -84,7 +84,6 @@ export interface Order {
   productCode: string;
   productName: string | null;
   productNameEng: string | null;
-  productDescription: string | null;
   status: OrderStatus;
   priority: OrderPriority;
   volume: number;
@@ -96,6 +95,7 @@ export interface Order {
   startAt: string | null;
   completeAt: string | null;
   sequence: string;
+  tx: number;
   cage: boolean;
   producedPackages: number;
   producedVolume: number;
@@ -139,6 +139,24 @@ export interface OrderDetail {
   shiftCode: string | null;
   shiftName: string | null;
   shiftColor: string | null;
+  productName: string | null;
+  productNameEng: string | null;
+  productPcsInPack: number | null;
+  productPacksInPackage: number | null;
+  productLayers: number | null;
+  productNormWaste: number | null;
+  productLineWidth: number | null;
+  productEdgeTrimWidth: number | null;
+  productWetEdgeTrimMode: number | null;
+  productWetEdgeTrimWidth: number | null;
+  productLength: number | null;
+  productWidth: number | null;
+  productThickness: number | null;
+  productDensity: number | null;
+  productInstruction: string | null;
+  productUnit: string | null;
+  productCategory: string | null;
+  productComment: string | null;
   cages: CageEntry[];
   shiftProductions: ShiftProduction[];
 }
@@ -152,9 +170,33 @@ export interface ShiftProduction {
   produced: number;
 }
 
+export interface OrderAttribute {
+  attributeId: number;
+  name: string | null;
+  nameEng: string | null;
+  valueType: string;
+  value: string | null;
+  defaultValue: string | null;
+  sortOrder: number;
+}
+
+export interface BinderType {
+  id: number;
+  name: string;
+  nameEng: string | null;
+}
+
+export interface PkfGroup {
+  id: number;
+  name: string;
+  nameEng: string | null;
+}
+
 export interface ProductionLine {
   id: number;
   name: string;
+  orderControlEnabled: boolean;
+  manualWasteEnabled: boolean;
 }
 
 export interface Shift {
@@ -177,6 +219,7 @@ export interface ShiftSchedule {
   id: number;
   pattern: string;
   startTime: string;
+  timezone: string;
   referenceDate: string | null;
   referenceShiftId: number | null;
   referenceShiftCode: string | null;
@@ -239,116 +282,81 @@ export interface AppSetting {
 export interface ProductListItem {
   id: number;
   number: string;
+  groupId: number | null;
+  groupName: string | null;
+  groupNameEng: string | null;
   name: string | null;
   nameEng: string | null;
-  sku: string | null;
-  description: string | null;
-  descriptionEng: string | null;
-  code: string | null;
-  unit: string | null;
+  coverCode: string | null;
+  packageCode: string | null;
+  uom: string | null;
   pcsInPack: number | null;
-  packsOnPallet: number | null;
-}
-
-export interface GeneralSp {
-  package?: string | null;
-  abcCat?: string | null;
-  wasteSuply?: number | null;
-  remark?: string | null;
-  info?: string | null;
-  labelling?: string | null;
-  state?: string | null;
-  dataCheck?: boolean | null;
-  drumPressure?: number | null;
-  sawCross?: number | null;
-  labellingState?: string | null;
-  productType?: string | null;
-  splitInPair113114?: boolean | null;
-  productTurnPos122?: string | null;
-  weightLimitMaxPerc?: number | null;
-  weightLimitMinPerc?: number | null;
-  flexiTurn?: boolean | null;
-  flexiWidth?: number | null;
-  energyClass?: string | null;
-  binderType?: string | null;
-  pkfGroup?: string | null;
-}
-
-export interface SawsSp {
-  trimmingWasteOws?: number | null;
-  platesInPkg?: number | null;
-  cutDirection?: string | null;
-  layers?: number | null;
-  wasteStd?: number | null;
-  trimmingWasteOw?: number | null;
-  sheetWidth?: number | null;
-  cutWidth?: number | null;
-  rawEdgeWidth?: number | null;
-}
-
-export interface TahuSp {
-  tahuFinishPackHeight?: number | null;
-  tahuOutputHeight?: number | null;
-  tahuSideWelding?: number | null;
-  tahuFilmWidth?: number | null;
-  tahuVacuum?: number | null;
-  tahuUseShrinkHeat?: boolean | null;
-  tahuSmartDate?: boolean | null;
-  tahuFoilCode?: string | null;
-}
-
-export interface BundlerSp {
-  bundlerPacksPerBundle?: number | null;
-  bundlerCompLength?: number | null;
-  bundlerOutputLength?: number | null;
-  productTurnPos608?: string | null;
-  groupProductPos608?: string | null;
-}
-
-export interface ConsumablesSp {
-  bundlePlasticCode?: string | null;
-  hooderPlasticCode?: string | null;
-  wrapperPlasticCode?: string | null;
-  checkLayers?: number | null;
-}
-
-export interface UlSp {
-  ulProductPerLayer?: number | null;
-  ulPalletLayers?: number | null;
-  ulLayersInterlocked?: boolean | null;
-  ulPackOrientation?: string | null;
-  ulDirectionBaseLayer?: string | null;
-  ulMiwoFeet?: number | null;
-  ulMiwoDim?: string | null;
-  ulPalletDim?: string | null;
-  ulPalletDimPerpendicular?: string | null;
-  ulPalletHeight?: number | null;
-  ulCrossTurning?: boolean | null;
-  ulUseHooding?: boolean | null;
-  ulUseGlue?: boolean | null;
-  ulUseWrapping?: boolean | null;
+  packsInPackage: number | null;
+  length: number | null;
+  width: number | null;
+  thickness: number | null;
+  density: number | null;
 }
 
 export interface ProductDetail {
   id: number;
   number: string;
-  description: string | null;
-  descriptionEng: string | null;
-  sku: string | null;
-  code: string | null;
+  groupId: number | null;
+  groupName: string | null;
+  groupNameEng: string | null;
+  name: string | null;
+  nameEng: string | null;
+  coverCode: string | null;
   packageCode: string | null;
-  initialCode: string | null;
-  instruction: string | null;
+  sequence: number | null;
+  productionInstruction: string | null;
+  uom: string | null;
+  pcsInPack: number | null;
+  packsInPackage: number | null;
   length: number | null;
   width: number | null;
   thickness: number | null;
   density: number | null;
-  generalSp: GeneralSp | null;
-  sawsSp: SawsSp | null;
-  tahuSp: TahuSp | null;
-  bundlerSp: BundlerSp | null;
-  consumablesSp: ConsumablesSp | null;
-  ulSp: UlSp | null;
+  layers: number | null;
+  grindingWaste: number | null;
+  normWaste: number | null;
+  grindingWasteOw: number | null;
+  category: string | null;
+  comment: string | null;
+  directRecycleMode: number | null;
+  info1: string | null;
+  info2: string | null;
+  info3: string | null;
+  info4: string | null;
+  info5: string | null;
+  info6: string | null;
+  productLineWidth: number | null;
+  edgeTrimWidth: number | null;
+  cutDirection: string | null;
+  wetEdgeTrimMode: number | null;
+  mark: number | null;
+  state: number | null;
+  modifiedAt: string | null;
+}
+
+export interface ProductGroup {
+  id: number;
+  name: string;
+  nameEng: string | null;
+}
+
+export interface Setpoint {
+  id: number;
+  productGroupId: number | null;
+  unitId: number | null;
+  unitName: string | null;
+  unitNameEng: string | null;
+  correctionTypeId: number | null;
+  correctionTypeName: string | null;
+  name: string;
+  nameEng: string | null;
+  value: string | null;
+  displayOrder: number;
 }
 
 export interface Material {

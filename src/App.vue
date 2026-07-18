@@ -92,6 +92,10 @@ const links = computed(() => [[{
     label: t('nav.materials'),
     to: '/master-data/materials',
     onSelect: () => { open.value = false }
+  }, {
+    label: t('nav.productGroups'),
+    to: '/master-data/product-groups',
+    onSelect: () => { open.value = false }
   }]
 },
 {

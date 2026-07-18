@@ -5,8 +5,9 @@ import { h, resolveComponent } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { TableColumn } from '@nuxt/ui'
 import { apiFetch } from '../../utils/api'
-import type { OrderDetail, CageEntry } from '../../types'
+import type { OrderDetail, CageEntry, OrderAttribute, BinderType, PkfGroup } from '../../types'
 import { useLines } from '../../composables/useLines'
+import { useLocalizedField } from '../../composables/useLocalizedField'
 import { useDashboard } from '../../composables/useDashboard'
 import { useMesUser } from '../../composables/useMesUser'
 
@@ -37,10 +38,71 @@ async function fetchOrder() {
   }
 }
 
-const { lineName, fetchLines } = useLines()
+const { lines, lineName, fetchLines } = useLines()
+const { localize } = useLocalizedField()
 const { orderProducedUpdated } = useDashboard()
 
-onMounted(() => { fetchOrder(); fetchLines() })
+// Order attributes
+const attributes = ref<OrderAttribute[]>([])
+const binderTypes = ref<BinderType[]>([])
+const pkfGroups = ref<PkfGroup[]>([])
+const editingAttributeId = ref<number | null>(null)
+const attributeDraft = ref('')
+const savingAttribute = ref(false)
+
+async function fetchAttributes() {
+  try {
+    const [attrs, bts, pkfs] = await Promise.all([
+      apiFetch<OrderAttribute[]>(`/orders/${orderId.value}/attributes`),
+      apiFetch<BinderType[]>('/binder-types'),
+      apiFetch<PkfGroup[]>('/pkf-groups')
+    ])
+    attributes.value = attrs
+    binderTypes.value = bts
+    pkfGroups.value = pkfs
+  } catch {
+    // no attributes for this product — leave empty
+  }
+}
+
+function startEditAttribute(attr: OrderAttribute) {
+  editingAttributeId.value = attr.attributeId
+  attributeDraft.value = attr.value ?? attr.defaultValue ?? ''
+}
+
+async function saveAttribute(attr: OrderAttribute) {
+  if (savingAttribute.value) return
+  savingAttribute.value = true
+  try {
+    await apiFetch(`/orders/${orderId.value}/attributes/${attr.attributeId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ value: String(attributeDraft.value) })
+    })
+    const idx = attributes.value.findIndex(a => a.attributeId === attr.attributeId)
+    if (idx >= 0) attributes.value[idx] = { ...attributes.value[idx], value: attributeDraft.value }
+    editingAttributeId.value = null
+    toast.add({ title: t('orderDetail.parameters.toast.saved'), color: 'success' })
+  } catch {
+    toast.add({ title: t('orderDetail.parameters.toast.failed'), color: 'error' })
+  } finally {
+    savingAttribute.value = false
+  }
+}
+
+function resolveAttributeLabel(attr: OrderAttribute): string {
+  const val = attr.value ?? attr.defaultValue ?? ''
+  if (attr.valueType === 'binder_type') {
+    const bt = binderTypes.value.find(b => String(b.id) === val)
+    if (bt) return localize(bt.name, bt.nameEng) ?? val
+  }
+  if (attr.valueType === 'pkf_group') {
+    const pg = pkfGroups.value.find(g => String(g.id) === val)
+    if (pg) return localize(pg.name, pg.nameEng) ?? val
+  }
+  return val
+}
+
+onMounted(() => { fetchOrder(); fetchLines(); fetchAttributes() })
 
 // Real-time produced counter update from OPC UA via NATS → SignalR
 watch(orderProducedUpdated, (data) => {
@@ -122,16 +184,14 @@ function startEditPackages(cage: CageEntry) {
 }
 async function saveCagePackages(cage: CageEntry) {
   if (cagePackagesDraft.value <= 0) return
-  const diff = cagePackagesDraft.value - cage.packages
   try {
     await apiFetch(`/orders/${orderId.value}/cages/${cage.id}/packages`, {
       method: 'PATCH',
       body: JSON.stringify({ packages: cagePackagesDraft.value })
     })
-    cage.packages = cagePackagesDraft.value
-    if (order.value) order.value.producedPackages += diff
     editingCageId.value = null
     toast.add({ title: t('orderDetail.cages.toast.packagesUpdated'), color: 'success' })
+    await fetchOrder()
   } catch {
     toast.add({ title: t('orderDetail.cages.toast.packagesFailed'), color: 'error' })
   }
@@ -155,7 +215,7 @@ const formatTimestamp = (ts: string) =>
 
 const producedTotal = computed(() => {
   if (!order.value) return 0
-  return order.value.uomCode === 'pkg' ? order.value.producedPackages : Number(order.value.producedVolume)
+  return order.value.uomCode === 'pcs' ? order.value.producedPackages : Number(order.value.producedVolume)
 })
 
 const hasGoodQuantity = computed(() => order.value?.goodQuantity != null)
@@ -177,7 +237,17 @@ const canEditProduction = computed(() => {
   return false
 })
 
-const statusColor = (s: string) => ({ queued: 'neutral', in_progress: 'primary', completed: 'success', cancelled: 'error' }[s] || 'neutral') as any
+const manualWasteEnabled = computed(() =>
+  lines.value.find(l => l.id === order.value?.line)?.manualWasteEnabled ?? true
+)
+
+const detailStatusColor = (s: string): any => ({
+  created: 'neutral',
+  running: 'success',
+  paused:  'warning',
+  completed: 'info',
+  cancelled: 'error'
+}[s] ?? 'neutral')
 
 const cageColumns: TableColumn<CageEntry>[] = [
   {
@@ -253,59 +323,209 @@ const cageColumns: TableColumn<CageEntry>[] = [
       </div>
 
       <template v-else-if="order">
-        <!-- Info cards -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 shrink-0">
+        <!-- Info cards: product number | product name | line | status | produced -->
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 shrink-0">
           <UCard :ui="{ body: 'space-y-1' }">
             <p class="text-xs text-muted uppercase">{{ t('orderDetail.cards.product') }}</p>
-            <p class="font-semibold text-highlighted">{{ order.productCode }}</p>
+            <p class="font-semibold text-highlighted font-mono">{{ order.productCode }}</p>
           </UCard>
           <UCard :ui="{ body: 'space-y-1' }">
-            <p class="text-xs text-muted uppercase">{{ t('orderDetail.cards.status') }}</p>
-            <UBadge :color="statusColor(order.status)" variant="subtle">
-              {{ order.status.replace('_', ' ') }}
-            </UBadge>
+            <p class="text-xs text-muted uppercase">{{ t('orderDetail.cards.productName') }}</p>
+            <p class="font-semibold text-highlighted text-sm">{{ localize(order.productName, order.productNameEng) ?? '—' }}</p>
           </UCard>
           <UCard :ui="{ body: 'space-y-1' }">
             <p class="text-xs text-muted uppercase">{{ t('orderDetail.cards.line') }}</p>
             <p class="font-semibold text-highlighted">{{ lineName(order.line) }}</p>
           </UCard>
           <UCard :ui="{ body: 'space-y-1' }">
-            <p class="text-xs text-muted uppercase">{{ t('orderDetail.cards.dueDate') }}</p>
-            <p class="font-semibold text-highlighted">
-              {{ order.dueDate ? new Date(order.dueDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : '—' }}
-            </p>
-          </UCard>
-          <UCard :ui="{ body: 'space-y-1' }">
-            <p class="text-xs text-muted uppercase">{{ t('orderDetail.cards.volume') }}</p>
-            <p class="font-semibold text-highlighted">{{ order.volume.toLocaleString() }} {{ order.uomCode }}</p>
-          </UCard>
-          <UCard v-if="order.cage" :ui="{ body: 'space-y-1' }">
-            <p class="text-xs text-muted uppercase">{{ t('orderDetail.cards.cageSize') }}</p>
-            <p class="font-semibold text-highlighted">{{ order.cageSize }} pkg</p>
+            <p class="text-xs text-muted uppercase">{{ t('orderDetail.cards.status') }}</p>
+            <UBadge :color="detailStatusColor(order.status)" variant="subtle">
+              {{ t(`orders.status.${order.status}`) }}
+            </UBadge>
           </UCard>
           <UCard :ui="{ body: 'space-y-1' }">
             <p class="text-xs text-muted uppercase">{{ t('orderDetail.cards.produced') }}</p>
             <p class="font-semibold text-highlighted">
               {{ producedTotal.toLocaleString() }}<template v-if="hasGoodQuantity"> / {{ Number(order.goodQuantity).toLocaleString() }}</template> / {{ order.volume.toLocaleString() }} {{ order.uomCode }}
             </p>
-            <p class="text-xs text-muted">{{ producedCaption }}</p>
-          </UCard>
-          <UCard :ui="{ body: 'space-y-1' }">
-            <p class="text-xs text-muted uppercase">{{ t('orderDetail.cards.progress') }}</p>
-            <p class="font-semibold text-highlighted">{{ progressPct }}%</p>
-          </UCard>
-          <UCard v-if="order.uomCode !== 'pkg'" :ui="{ body: 'space-y-1' }">
-            <p class="text-xs text-muted uppercase">{{ t('orderDetail.cards.packagesProduced') }}</p>
-            <p class="font-semibold text-highlighted">{{ order.pkgProduced.toLocaleString() }} pcs</p>
-          </UCard>
-          <UCard v-if="order.shiftCode" :ui="{ body: 'space-y-1' }">
-            <p class="text-xs text-muted uppercase">{{ t('orderDetail.cards.shift') }}</p>
-            <div class="flex items-center gap-2">
-              <span class="inline-block w-3 h-3 rounded-full" :style="{ background: order.shiftColor ?? '#6366f1' }" />
-              <p class="font-semibold text-highlighted">{{ order.shiftName ?? order.shiftCode }}</p>
-            </div>
+            <p class="text-xs text-muted">{{ progressPct }}% · {{ producedCaption }}</p>
           </UCard>
         </div>
+
+        <!-- Production Info table (2 columns) + Product Dimensions -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 shrink-0">
+          <!-- Production Info -->
+          <UCard :ui="{ body: 'p-0' }">
+            <template #header>
+              <p class="text-xs text-muted uppercase">{{ t('orderDetail.productionInfo.title') }}</p>
+            </template>
+            <div class="grid grid-cols-2 divide-x divide-default">
+              <!-- Column 1 -->
+              <table class="w-full text-sm">
+                <tbody>
+                  <tr v-if="order.productPcsInPack != null" class="border-b border-default">
+                    <td class="px-3 py-1.5 text-muted">{{ t('orderDetail.productionInfo.col1.pcsInPack') }}</td>
+                    <td class="px-3 py-1.5 font-medium text-highlighted text-right">{{ order.productPcsInPack }}</td>
+                  </tr>
+                  <tr v-if="order.productPacksInPackage != null" class="border-b border-default">
+                    <td class="px-3 py-1.5 text-muted">{{ t('orderDetail.productionInfo.col1.packsInPackage') }}</td>
+                    <td class="px-3 py-1.5 font-medium text-highlighted text-right">{{ order.productPacksInPackage }}</td>
+                  </tr>
+                  <tr class="border-b border-default">
+                    <td class="px-3 py-1.5 text-muted">{{ t('orderDetail.productionInfo.col1.totalVolume') }}</td>
+                    <td class="px-3 py-1.5 font-medium text-highlighted text-right">{{ order.volume.toLocaleString() }} {{ order.uomCode }}</td>
+                  </tr>
+                  <tr v-if="order.productPacksInPackage != null" class="border-b border-default">
+                    <td class="px-3 py-1.5 text-muted">{{ t('orderDetail.productionInfo.col1.totalPacks') }}</td>
+                    <td class="px-3 py-1.5 font-medium text-highlighted text-right">{{ Math.round(order.volume * order.productPacksInPackage).toLocaleString() }}</td>
+                  </tr>
+                  <tr v-if="order.productPcsInPack != null && order.productLength != null && order.productWidth != null && order.productThickness != null && order.productDensity != null" class="border-b border-default">
+                    <td class="px-3 py-1.5 text-muted">{{ t('orderDetail.productionInfo.col1.amount') }}</td>
+                    <td class="px-3 py-1.5 font-medium text-highlighted text-right">
+                      {{ Math.round(order.volume * order.productPcsInPack * (order.productLength / 1000) * (order.productWidth / 1000) * (order.productThickness / 1000) * order.productDensity).toLocaleString() }}
+                    </td>
+                  </tr>
+                  <tr v-if="order.productNormWaste != null" class="border-b border-default">
+                    <td class="px-3 py-1.5 text-muted">{{ t('orderDetail.productionInfo.col1.normWaste') }}</td>
+                    <td class="px-3 py-1.5 font-medium text-highlighted text-right">{{ order.productNormWaste }}</td>
+                  </tr>
+                  <tr v-if="order.productLineWidth != null" class="border-b border-default">
+                    <td class="px-3 py-1.5 text-muted">{{ t('orderDetail.productionInfo.col1.productLineWidth') }}</td>
+                    <td class="px-3 py-1.5 font-medium text-highlighted text-right">{{ order.productLineWidth }}</td>
+                  </tr>
+                  <tr v-if="order.productEdgeTrimWidth != null" class="border-b border-default">
+                    <td class="px-3 py-1.5 text-muted">{{ t('orderDetail.productionInfo.col1.edgeTrimWidth') }}</td>
+                    <td class="px-3 py-1.5 font-medium text-highlighted text-right">{{ order.productEdgeTrimWidth }}</td>
+                  </tr>
+                  <tr v-if="order.productWetEdgeTrimWidth != null">
+                    <td class="px-3 py-1.5 text-muted">{{ t('orderDetail.productionInfo.col1.wetEdgeTrimWidth') }}</td>
+                    <td class="px-3 py-1.5 font-medium text-highlighted text-right">{{ order.productWetEdgeTrimWidth }}</td>
+                  </tr>
+                </tbody>
+              </table>
+              <!-- Column 2 -->
+              <table class="w-full text-sm">
+                <tbody>
+                  <tr v-if="order.productInstruction" class="border-b border-default">
+                    <td class="px-3 py-1.5 text-muted">{{ t('orderDetail.productionInfo.col2.instruction') }}</td>
+                    <td class="px-3 py-1.5 font-medium text-highlighted text-right">{{ order.productInstruction }}</td>
+                  </tr>
+                  <tr v-if="order.productUnit" class="border-b border-default">
+                    <td class="px-3 py-1.5 text-muted">{{ t('orderDetail.productionInfo.col2.package') }}</td>
+                    <td class="px-3 py-1.5 font-medium text-highlighted text-right">{{ order.productUnit }}</td>
+                  </tr>
+                  <tr v-if="order.productCategory" class="border-b border-default">
+                    <td class="px-3 py-1.5 text-muted">{{ t('orderDetail.productionInfo.col2.category') }}</td>
+                    <td class="px-3 py-1.5 font-medium text-highlighted text-right">{{ order.productCategory }}</td>
+                  </tr>
+                  <tr v-if="order.productComment" class="border-b border-default">
+                    <td class="px-3 py-1.5 text-muted">{{ t('orderDetail.productionInfo.col2.comment') }}</td>
+                    <td class="px-3 py-1.5 font-medium text-highlighted text-right">{{ order.productComment }}</td>
+                  </tr>
+                  <tr v-if="order.productLayers != null">
+                    <td class="px-3 py-1.5 text-muted">{{ t('orderDetail.productionInfo.col2.layers') }}</td>
+                    <td class="px-3 py-1.5 font-medium text-highlighted text-right">{{ order.productLayers }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </UCard>
+
+          <!-- Product Info (dimensions) -->
+          <UCard :ui="{ body: 'p-0' }">
+            <template #header>
+              <p class="text-xs text-muted uppercase">{{ t('orderDetail.productInfo.title') }}</p>
+            </template>
+            <table class="w-full text-sm">
+              <tbody>
+                <tr v-if="order.productLength != null" class="border-b border-default">
+                  <td class="px-4 py-2 text-muted w-1/2">{{ t('orderDetail.productInfo.length') }}</td>
+                  <td class="px-4 py-2 font-medium text-highlighted text-right">{{ order.productLength }}</td>
+                </tr>
+                <tr v-if="order.productWidth != null" class="border-b border-default">
+                  <td class="px-4 py-2 text-muted">{{ t('orderDetail.productInfo.width') }}</td>
+                  <td class="px-4 py-2 font-medium text-highlighted text-right">{{ order.productWidth }}</td>
+                </tr>
+                <tr v-if="order.productThickness != null" class="border-b border-default">
+                  <td class="px-4 py-2 text-muted">{{ t('orderDetail.productInfo.thickness') }}</td>
+                  <td class="px-4 py-2 font-medium text-highlighted text-right">{{ order.productThickness }}</td>
+                </tr>
+                <tr v-if="order.productDensity != null">
+                  <td class="px-4 py-2 text-muted">{{ t('orderDetail.productInfo.density') }}</td>
+                  <td class="px-4 py-2 font-medium text-highlighted text-right">{{ order.productDensity }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </UCard>
+        </div>
+
+        <!-- Order Parameters -->
+        <UCard v-if="attributes.length" class="shrink-0" :ui="{ body: 'p-0' }">
+          <template #header>
+            <p class="text-xs text-muted uppercase">{{ t('orderDetail.parameters.title') }}</p>
+          </template>
+          <table class="w-full text-sm">
+            <tbody>
+              <tr
+                v-for="attr in attributes"
+                :key="attr.attributeId"
+                class="border-b border-default last:border-b-0"
+              >
+                <td class="px-3 py-1.5 text-muted w-1/2">{{ localize(attr.name, attr.nameEng) }}</td>
+                <td class="px-3 py-1.5 text-right">
+                  <template v-if="isAdmin && editingAttributeId === attr.attributeId">
+                    <div class="flex items-center justify-end gap-1">
+                      <template v-if="attr.valueType === 'binder_type'">
+                        <select
+                          v-model="attributeDraft"
+                          class="border border-default rounded px-2 py-0.5 text-sm bg-elevated text-highlighted"
+                        >
+                          <option v-for="bt in binderTypes" :key="bt.id" :value="String(bt.id)">
+                            {{ localize(bt.name, bt.nameEng) }}
+                          </option>
+                        </select>
+                      </template>
+                      <template v-else-if="attr.valueType === 'pkf_group'">
+                        <select
+                          v-model="attributeDraft"
+                          class="border border-default rounded px-2 py-0.5 text-sm bg-elevated text-highlighted"
+                        >
+                          <option v-for="pg in pkfGroups" :key="pg.id" :value="String(pg.id)">
+                            {{ localize(pg.name, pg.nameEng) }}
+                          </option>
+                        </select>
+                      </template>
+                      <template v-else>
+                        <input
+                          v-model="attributeDraft"
+                          :type="attr.valueType === 'integer' || attr.valueType === 'numeric' ? 'number' : 'text'"
+                          class="w-28 text-right border border-default rounded px-2 py-0.5 text-sm bg-elevated text-highlighted"
+                          @keydown.enter="saveAttribute(attr)"
+                          @keydown.escape="editingAttributeId = null"
+                        />
+                      </template>
+                      <UButton icon="i-lucide-check" color="success" variant="ghost" size="xs" :loading="savingAttribute" @click="saveAttribute(attr)" />
+                      <UButton icon="i-lucide-x" color="neutral" variant="ghost" size="xs" @click="editingAttributeId = null" />
+                    </div>
+                  </template>
+                  <template v-else>
+                    <div class="flex items-center justify-end gap-2">
+                      <span class="font-medium text-highlighted">{{ resolveAttributeLabel(attr) }}</span>
+                      <UButton
+                        v-if="isAdmin"
+                        icon="i-lucide-pencil"
+                        color="neutral"
+                        variant="ghost"
+                        size="xs"
+                        @click="startEditAttribute(attr)"
+                      />
+                    </div>
+                  </template>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </UCard>
 
         <!-- Production progress + shift breakdown -->
         <UCard class="shrink-0">
@@ -349,7 +569,7 @@ const cageColumns: TableColumn<CageEntry>[] = [
           <template #header>
             <p class="text-xs text-muted uppercase">{{ t('orderDetail.waste.title') }}</p>
           </template>
-          <div v-if="canEditProduction" class="flex items-end gap-3">
+          <div v-if="canEditProduction && manualWasteEnabled" class="flex items-end gap-3">
             <UFormField :label="t('orderDetail.waste.label', { uom: order.uomCode })" class="flex-1">
               <UInput v-model.number="wasteDraft" type="number" min="0" :placeholder="t('orderDetail.waste.placeholder')" class="w-full" />
             </UFormField>
@@ -361,6 +581,9 @@ const cageColumns: TableColumn<CageEntry>[] = [
               @click="saveWaste"
             />
           </div>
+          <p v-else-if="!manualWasteEnabled" class="text-sm text-muted">
+            {{ t('orderDetail.waste.disabledForLine') }}
+          </p>
           <p v-else class="text-sm text-muted">
             {{ t('orderDetail.waste.locked') }}
           </p>

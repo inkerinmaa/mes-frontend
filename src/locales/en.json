@@ -11,6 +11,7 @@
     "masterData": "Master Data",
     "products": "Products",
     "materials": "Materials",
+    "productGroups": "Product Groups",
     "settings": "Settings",
     "general": "General",
     "notifications": "Notifications",
@@ -106,21 +107,16 @@
     },
     "orders": {
       "title": "Order Queue",
-      "subtitle": "Current production sequence",
-      "empty": "No orders for this line",
+      "subtitle": "Yesterday → Today → Tomorrow (by planned start)",
+      "empty": "No orders in this period for the selected line",
       "columns": {
-        "position": "Position",
+        "position": "#",
         "orderNumber": "Order No.",
-        "productCode": "Product",
-        "status": "Status",
-        "dueDate": "Due Date"
-      },
-      "labels": {
-        "prev1": "Prev-1",
-        "prev": "Prev",
-        "current": "Current",
-        "next": "Next",
-        "next1": "Next+1"
+        "productCode": "Product No.",
+        "productName": "Name",
+        "plannedStart": "Planned Start",
+        "volume": "Volume",
+        "status": "Status"
       }
     }
   },
@@ -146,6 +142,7 @@
       "queue": "Queue",
       "plannedStart": "Planned Start",
       "plannedComplete": "Planned Complete",
+      "startAt": "Actual Start",
       "control": "Control"
     },
     "dates": {
@@ -167,7 +164,8 @@
     },
     "queue": {
       "inProcess": "In Process",
-      "next": "Next"
+      "next": "Next",
+      "nextPlus": "Next+{n}"
     },
     "control": {
       "start": "Start",
@@ -195,6 +193,7 @@
     "description": "Add a new production order",
     "fields": {
       "orderNumber": "Order Number",
+      "tx": "Index (tx)",
       "product": "Product",
       "volume": "Volume",
       "unit": "Unit",
@@ -215,6 +214,7 @@
     },
     "toast": {
       "created": "Order created",
+      "reactivated": "Order reactivated",
       "alreadyExists": "Order number already exists",
       "failed": "Failed to create order"
     }
@@ -234,6 +234,7 @@
     "loading": "Loading...",
     "cards": {
       "product": "Product",
+      "productName": "Product Name",
       "shift": "Shift",
       "status": "Status",
       "priority": "Priority",
@@ -291,11 +292,48 @@
       "confirm": "Confirm",
       "goodQuantity": "Good Quantity",
       "locked": "Operators can only record waste while the order is running or paused.",
+      "disabledForLine": "Manual waste input is disabled for this line.",
       "recorded": "Recorded: {waste} {uom} waste, {good} {uom} good",
       "toast": {
         "saved": "Waste recorded",
         "failed": "Failed to record waste"
       }
+    },
+    "productionInfo": {
+      "title": "Production Info",
+      "col1": {
+        "pcsInPack": "Pcs / Pack",
+        "packsInPackage": "Packs / Package",
+        "totalVolume": "Total Planned Volume",
+        "totalPacks": "Total Packs",
+        "amount": "Amount (kg)",
+        "normWaste": "Norm Waste (%)",
+        "productLineWidth": "Product Line Width (mm)",
+        "edgeTrimWidth": "Edge Trim Width (mm)",
+        "wetEdgeTrimMode": "Wet Edge Trim Mode",
+        "wetEdgeTrimWidth": "Wet Edge Trim Width (mm)"
+      },
+      "col2": {
+        "instruction": "Instruction",
+        "package": "Package Unit",
+        "category": "Category",
+        "comment": "Comment",
+        "layers": "Layers"
+      }
+    },
+    "parameters": {
+      "title": "Order Parameters",
+      "toast": {
+        "saved": "Parameter saved",
+        "failed": "Failed to save parameter"
+      }
+    },
+    "productInfo": {
+      "title": "Product Info",
+      "length": "Length (mm)",
+      "width": "Width (mm)",
+      "thickness": "Thickness (mm)",
+      "density": "Density (kg/m³)"
     },
     "shiftProductions": {
       "title": "Production by Shift",
@@ -450,12 +488,56 @@
       "count": "{n} product(s)",
       "columns": {
         "number": "Number",
-        "sku": "SKU",
-        "description": "Description",
-        "code": "Code"
+        "name": "Name",
+        "group": "Group",
+        "coverCode": "Cover Code",
+        "thickness": "Thickness",
+        "density": "Density"
       },
       "actions": {
         "viewDetails": "View details"
+      },
+      "toast": {
+        "saved": "Product saved",
+        "saveFailed": "Failed to save product"
+      },
+      "detail": {
+        "title": "Product Detail",
+        "identity": "Identity",
+        "basicInfo": "Basic Information",
+        "dimensions": "Dimensions",
+        "packaging": "Packaging",
+        "processParams": "Process Parameters",
+        "info": "Additional Info",
+        "modifiedAt": "Last modified"
+      },
+      "fields": {
+        "name": "Name (RU)",
+        "nameEng": "Name (EN)",
+        "coverCode": "Cover Code",
+        "packageCode": "Package Code",
+        "sequence": "Sequence",
+        "unit": "Unit",
+        "mark": "Mark",
+        "state": "State",
+        "productionInstruction": "Production Instruction",
+        "category": "Category",
+        "comment": "Comment",
+        "directRecycleMode": "Direct Recycle Mode",
+        "length": "Length",
+        "width": "Width",
+        "thickness": "Thickness",
+        "density": "Density",
+        "pcsInPack": "Pcs / Pack",
+        "packsInPackage": "Packs / Package",
+        "layers": "Layers",
+        "normWaste": "Norm Waste (%)",
+        "grindingWaste": "Grinding Waste (%)",
+        "grindingWasteOw": "Grinding Waste OW (%)",
+        "productLineWidth": "Product Line Width",
+        "edgeTrimWidth": "Edge Trim Width",
+        "wetEdgeTrimMode": "Wet Edge Trim Mode",
+        "info": "Info {n}"
       }
     },
     "materials": {
@@ -465,6 +547,23 @@
         "name": "Name",
         "unit": "Unit",
         "stock": "Stock"
+      }
+    },
+    "productGroups": {
+      "title": "Product Groups",
+      "filterGroup": "Filter by group...",
+      "filterProduct": "Filter by product number...",
+      "allGroups": "All groups",
+      "noGroup": "Select a group to view setpoints",
+      "columns": {
+        "parameter": "Parameter",
+        "unit": "Unit",
+        "correctionType": "Correction",
+        "value": "Value"
+      },
+      "toast": {
+        "saved": "Value saved",
+        "saveFailed": "Failed to save value"
       }
     }
   },
@@ -514,6 +613,27 @@
         "failed": "Failed to save system settings"
       }
     },
+    "orderColors": {
+      "title": "Order Row Colors",
+      "description": "Background color for each order status in the orders list. Admin only.",
+      "running": "Running",
+      "completed": "Last Completed",
+      "queued": "Queued / Scheduled",
+      "toast": {
+        "saved": "Order colors saved",
+        "failed": "Failed to save order colors"
+      }
+    },
+    "lineControls": {
+      "title": "Line Controls",
+      "description": "Per-line toggles for order state control and manual waste input. Admin only.",
+      "orderControl": "Order Control",
+      "manualWaste": "Manual Waste",
+      "toast": {
+        "saved": "Line controls saved",
+        "failed": "Failed to save line controls"
+      }
+    },
     "language": {
       "title": "Language",
       "description": "Interface display language.",
@@ -531,6 +651,7 @@
       "scheduleDesc": "Choose a rotation pattern and set the reference date/shift to anchor the calendar.",
       "pattern": "Pattern",
       "startTime": "Shift Start Time",
+      "timezone": "Plant Timezone",
       "referenceDate": "Reference Date",
       "referenceShift": "Reference Shift",
       "patterns": {

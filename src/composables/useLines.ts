@@ -15,15 +15,24 @@ const _useLines = () => {
     }
   }
 
+  async function refreshLines() {
+    lines.value = []
+    await fetchLines()
+  }
+
   const lineMap = computed(() =>
     Object.fromEntries(lines.value.map(l => [l.id, l.name])) as Record<number, string>
+  )
+
+  const lineById = computed(() =>
+    Object.fromEntries(lines.value.map(l => [l.id, l])) as Record<number, ProductionLine>
   )
 
   function lineName(id: number): string {
     return lineMap.value[id] ?? `Line ${id}`
   }
 
-  return { lines, lineMap, lineName, fetchLines }
+  return { lines, lineMap, lineById, lineName, fetchLines, refreshLines }
 }
 
 export const useLines = createSharedComposable(_useLines)

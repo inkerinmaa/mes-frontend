@@ -13,6 +13,10 @@ const links = computed(() => [[{
   label: t('nav.materials'),
   icon: 'i-lucide-flask-conical',
   to: '/master-data/materials'
+}, {
+  label: t('nav.productGroups'),
+  icon: 'i-lucide-layers',
+  to: '/master-data/product-groups'
 }]] satisfies NavigationMenuItem[][])
 </script>
 

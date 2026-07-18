@@ -48,8 +48,9 @@ async function bootstrap() {
         component: () => import("./pages/master-data.vue"),
         children: [
           { path: "", redirect: "/master-data/products" },
-          { path: "products",  component: () => import("./pages/master-data/products.vue") },
-          { path: "materials", component: () => import("./pages/master-data/materials.vue") },
+          { path: "products",       component: () => import("./pages/master-data/products.vue") },
+          { path: "materials",      component: () => import("./pages/master-data/materials.vue") },
+          { path: "product-groups", component: () => import("./pages/master-data/product-groups.vue") },
         ],
       },
       { path: "/master-data/products/:id", component: () => import("./pages/master-data/products/[id].vue") },

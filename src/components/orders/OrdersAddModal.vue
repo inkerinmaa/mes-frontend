@@ -19,6 +19,7 @@ let uomCache: Uom[] | null = null
 
 const schema = z.object({
   orderNumber:       z.string().min(1, 'Required'),
+  tx:                z.coerce.number().min(0).default(0),
   productCode:       z.string().min(1, 'Select a product'),
   volume:            z.coerce.number().positive('Must be greater than 0'),
   uomCode:           z.string().min(1, 'Select a unit'),
@@ -41,6 +42,7 @@ const loadError = ref('')
 
 const state = reactive<Partial<Schema>>({
   orderNumber:       '',
+  tx:                0,
   productCode:       undefined,
   volume:            undefined,
   uomCode:           undefined,
@@ -95,6 +97,7 @@ watch([isWiredMattsLine, selectedProduct], () => {
 function resetForm() {
   Object.assign(state, {
     orderNumber:       '',
+    tx:                0,
     productCode:       undefined,
     volume:            undefined,
     uomCode:           undefined,
@@ -110,11 +113,13 @@ function resetForm() {
 
 async function onSubmit(event: FormSubmitEvent<Schema>) {
   isSubmitting.value = true
+  const isReactivation = (event.data.tx ?? 0) > 0
   try {
     await apiFetch<unknown>('/orders', {
       method: 'POST',
       body: JSON.stringify({
         orderNumber:       event.data.orderNumber,
+        tx:                event.data.tx ?? 0,
         productCode:       event.data.productCode,
         lineId:            Number(event.data.lineId),
         volume:            Number(event.data.volume),
@@ -128,7 +133,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       })
     })
     toast.add({
-      title: t('newOrder.toast.created'),
+      title: isReactivation ? t('newOrder.toast.reactivated') : t('newOrder.toast.created'),
       description: `${event.data.orderNumber} — ${event.data.productCode} × ${event.data.volume} ${event.data.uomCode} on ${lineName(Number(event.data.lineId))}`,
       color: 'success'
     })
@@ -151,9 +156,14 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     <template #body>
       <div v-if="loadError" class="text-error text-sm mb-4">{{ loadError }}</div>
       <UForm :schema="schema" :state="state" class="space-y-4" @submit="onSubmit">
-        <UFormField :label="t('newOrder.fields.orderNumber')" name="orderNumber">
-          <UInput v-model="state.orderNumber" :placeholder="t('newOrder.placeholder.orderNumber')" class="w-full" />
-        </UFormField>
+        <div class="flex gap-3">
+          <UFormField :label="t('newOrder.fields.orderNumber')" name="orderNumber" class="flex-1">
+            <UInput v-model="state.orderNumber" :placeholder="t('newOrder.placeholder.orderNumber')" class="w-full" />
+          </UFormField>
+          <UFormField :label="t('newOrder.fields.tx')" name="tx" class="w-28">
+            <UInput v-model.number="state.tx" type="number" min="0" class="w-full" />
+          </UFormField>
+        </div>
 
         <UFormField :label="t('newOrder.fields.product')" name="productCode">
           <USelect

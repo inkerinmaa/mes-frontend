@@ -12,6 +12,7 @@ import { useMesUser } from '../composables/useMesUser'
 import { useLines } from '../composables/useLines'
 import { useSelectedLines } from '../composables/useSelectedLines'
 import { useLocalizedField } from '../composables/useLocalizedField'
+import { useSettings } from '../composables/useSettings'
 
 const { t, locale } = useI18n()
 const { localize } = useLocalizedField()
@@ -26,15 +27,16 @@ const router = useRouter()
 const toast = useToast()
 const table = useTemplateRef('table')
 const { canSeeAdminUi } = useMesUser()
-const { lineName, fetchLines } = useLines()
+const { lines, lineName, fetchLines } = useLines()
 const { visibleLines } = useSelectedLines()
+const { orderColorRunning, orderColorCompleted, orderColorQueued } = useSettings()
 onMounted(fetchLines)
 
 const columnFilters = ref([{
   id: 'productCode',
   value: ''
 }])
-const columnVisibility = useStorage('mes_orders_cols', { priority: false, productName: false, productDescription: false, plannedCompleteAt: false })
+const columnVisibility = useStorage('mes_orders_cols', { priority: false, productName: false, plannedCompleteAt: false, status: false })
 const rowSelection = ref({})
 
 const data = ref<Order[]>([])
@@ -198,11 +200,6 @@ const columns = computed<TableColumn<Order>[]>(() => [
     cell: ({ row }) => localize(row.original.productName, row.original.productNameEng) ?? '—'
   },
   {
-    accessorKey: 'productDescription',
-    header: () => t('orders.columns.productDescription'),
-    cell: ({ row }) => row.original.productDescription ?? '—'
-  },
-  {
     accessorKey: 'priority',
     header: () => t('orders.columns.priority'),
     filterFn: 'equals',
@@ -260,24 +257,32 @@ const columns = computed<TableColumn<Order>[]>(() => [
     }
   },
   {
-    accessorKey: 'status',
-    header: () => t('orders.columns.status'),
-    cell: ({ row }) => {
-      const cfg = statusConfig.value[row.original.status as OrderStatus] ?? { label: row.original.status, color: 'neutral' as const }
-      return h(UBadge, { variant: 'subtle', color: cfg.color }, () => cfg.label)
-    }
-  },
-  {
     accessorKey: 'sequence',
     header: () => t('orders.columns.queue'),
     cell: ({ row }) => {
-      const seq = row.original.sequence
-      const color = seq === 'In Process' ? 'primary' as const
-        : seq === 'Next' ? 'warning' as const
-        : 'neutral' as const
-      const badge = h(UBadge, { variant: 'subtle', color }, () => seq)
-
       const s = row.original.status as OrderStatus
+      const seq = row.original.sequence
+
+      let badge
+      if (s === 'created' || s === 'paused') {
+        let label: string
+        let color: 'warning' | 'neutral'
+        if (seq === 'Next') {
+          label = t('orders.queue.next')
+          color = 'warning'
+        } else if (seq.startsWith('Next+')) {
+          label = t('orders.queue.nextPlus', { n: seq.slice(5) })
+          color = 'neutral'
+        } else {
+          label = seq
+          color = 'neutral'
+        }
+        badge = h(UBadge, { variant: 'subtle', color }, () => label)
+      } else {
+        const cfg = statusConfig.value[s] ?? { label: s, color: 'neutral' as const }
+        badge = h(UBadge, { variant: 'subtle', color: cfg.color }, () => cfg.label)
+      }
+
       const isQueued = s === 'created' || s === 'paused'
       if (!canSeeAdminUi.value || !isQueued) return badge
 
@@ -313,6 +318,14 @@ const columns = computed<TableColumn<Order>[]>(() => [
     }
   },
   {
+    accessorKey: 'startAt',
+    header: () => t('orders.columns.startAt'),
+    cell: ({ row }) => {
+      if (!row.original.startAt) return h('span', { class: 'text-muted text-xs' }, '—')
+      return new Date(row.original.startAt).toLocaleString(locale.value === 'ru' ? 'ru-RU' : 'en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })
+    }
+  },
+  {
     accessorKey: 'plannedCompleteAt',
     header: () => t('orders.columns.plannedComplete'),
     cell: ({ row }) => {
@@ -321,11 +334,21 @@ const columns = computed<TableColumn<Order>[]>(() => [
     }
   },
   {
+    accessorKey: 'status',
+    header: () => t('orders.columns.status'),
+    enableHiding: true,
+    cell: ({ row }) => {
+      const cfg = statusConfig.value[row.original.status as OrderStatus] ?? { label: row.original.status, color: 'neutral' as const }
+      return h(UBadge, { variant: 'subtle', color: cfg.color }, () => cfg.label)
+    }
+  },
+  {
     id: 'startStop',
     header: () => t('orders.columns.control'),
     cell: ({ row }) => {
       const s = row.original.status as OrderStatus
-      if (!canSeeAdminUi.value) return null
+      const lineData = lines.value.find(l => l.id === row.original.line)
+      if (!canSeeAdminUi.value || lineData?.orderControlEnabled === false) return null
       if (s === 'created' || s === 'paused') {
         return h(UButton, { size: 'xs', color: 'primary', variant: 'subtle', label: t('orders.control.start'), onClick: () => transitionStatus(row.original, 'start') })
       }
@@ -384,8 +407,36 @@ const statusFilterItems = computed(() =>
 
 // Date range filter (pre-filters data before TanStack Table sees it)
 const dateField = ref<'plannedStartAt' | 'dueDate' | 'plannedCompleteAt'>('plannedStartAt')
-const dateFrom = ref('')
-const dateTo = ref('')
+
+function isoDate(d: Date) { return d.toISOString().slice(0, 10) }
+const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1)
+const tomorrow  = new Date(); tomorrow.setDate(tomorrow.getDate() + 1)
+const dateFrom = ref(isoDate(yesterday))
+const dateTo   = ref(isoDate(tomorrow))
+
+function sortOrders(orders: Order[]): Order[] {
+  const priority = (s: string) => s === 'completed' ? 0 : s === 'running' ? 1 : (s === 'created' || s === 'paused') ? 2 : 3
+  return [...orders].sort((a, b) => {
+    const pa = priority(a.status), pb = priority(b.status)
+    if (pa !== pb) return pa - pb
+    if (a.status === 'completed' && b.status === 'completed')
+      return (b.completeAt ?? '').localeCompare(a.completeAt ?? '')
+    if ((a.status === 'created' || a.status === 'paused') && (b.status === 'created' || b.status === 'paused')) {
+      if (!a.plannedStartAt && !b.plannedStartAt) return 0
+      if (!a.plannedStartAt) return 1
+      if (!b.plannedStartAt) return -1
+      return a.plannedStartAt.localeCompare(b.plannedStartAt)
+    }
+    return 0
+  })
+}
+
+function getRowStyle(order: Order): Record<string, string> {
+  if (order.status === 'completed')                                  return { backgroundColor: orderColorCompleted.value }
+  if (order.status === 'running')                                    return { backgroundColor: orderColorRunning.value }
+  if (order.status === 'created' || order.status === 'paused')      return { backgroundColor: orderColorQueued.value }
+  return {}
+}
 
 const displayedData = computed(() => {
   let result = data.value
@@ -394,17 +445,20 @@ const displayedData = computed(() => {
     result = result.filter(o => statusFilter.value.includes(o.status))
   }
 
-  if (!dateFrom.value && !dateTo.value) return result
-  const from = dateFrom.value ? new Date(dateFrom.value) : null
-  const to   = dateTo.value   ? new Date(dateTo.value + 'T23:59:59') : null
-  return result.filter(order => {
-    const val = order[dateField.value]
-    if (!val) return false
-    const d = new Date(val)
-    if (from && d < from) return false
-    if (to   && d > to)   return false
-    return true
-  })
+  if (dateFrom.value || dateTo.value) {
+    const from = dateFrom.value ? new Date(dateFrom.value) : null
+    const to   = dateTo.value   ? new Date(dateTo.value + 'T23:59:59') : null
+    result = result.filter(order => {
+      const val = order[dateField.value]
+      if (!val) return false
+      const d = new Date(val)
+      if (from && d < from) return false
+      if (to   && d > to)   return false
+      return true
+    })
+  }
+
+  return sortOrders(result)
 })
 
 // Reschedule modal state
@@ -566,6 +620,7 @@ function clearRowSelection() {
         :pagination-options="{
           getPaginationRowModel: getPaginationRowModel()
         }"
+        :meta="{ style: { tr: (row: any) => getRowStyle(row.original) } }"
         class="shrink-0"
         :data="displayedData"
         :columns="columns"
