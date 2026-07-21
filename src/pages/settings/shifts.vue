@@ -9,7 +9,7 @@ const { t } = useI18n()
 const { isAdmin } = useMesUser()
 const toast = useToast()
 
-const DAY_NIGHT_PATTERN = '2on2off2night2off'
+const DAY_NIGHT_PATTERNS = new Set(['2on2off2night2off', '2day1off2night3off'])
 
 const shifts = ref<Shift[]>([])
 const schedule = ref<ShiftSchedule | null>(null)
@@ -49,7 +49,7 @@ const schedEdit = reactive({
 const savingShift = ref<Record<number, boolean>>({})
 const savingSchedule = ref(false)
 
-const isDayNightPattern = computed(() => schedEdit.pattern === DAY_NIGHT_PATTERN)
+const isDayNightPattern = computed(() => DAY_NIGHT_PATTERNS.has(schedEdit.pattern))
 
 const calendarDate = ref(new Date())
 const calendarYear = computed(() => calendarDate.value.getFullYear())
@@ -99,14 +99,19 @@ function getShiftForDate(date: Date, sch: ShiftSchedule): Shift | null {
   return sortedShifts[shiftIndex]
 }
 
-// Day/Night pattern: 8-day cycle per shift — Day/Day/Off/Off/Night/Night/Off/Off
-const DAY_NIGHT_SLOTS = ['day', 'day', 'off', 'off', 'night', 'night', 'off', 'off']
+// 8-day cycle slot arrays per pattern
+function getDayNightSlots(pattern: string): string[] {
+  return pattern === '2day1off2night3off'
+    ? ['day', 'day', 'off', 'night', 'night', 'off', 'off', 'off']
+    : ['day', 'day', 'off', 'off', 'night', 'night', 'off', 'off']
+}
 
 function getShiftsForDate(date: Date): { day: Shift | null; night: Shift | null } {
   const sch = schedule.value!
   const result: { day: Shift | null; night: Shift | null } = { day: null, night: null }
   if (!sch.shiftReferences?.length) return result
 
+  const slots = getDayNightSlots(sch.pattern)
   const target = new Date(date)
   target.setHours(0, 0, 0, 0)
 
@@ -116,7 +121,7 @@ function getShiftsForDate(date: Date): { day: Shift | null; night: Shift | null 
     refDate.setHours(0, 0, 0, 0)
     const daysDiff = Math.round((target.getTime() - refDate.getTime()) / 86400000)
     const cyclePos = ((daysDiff % 8) + 8) % 8
-    const slot = DAY_NIGHT_SLOTS[cyclePos]
+    const slot = slots[cyclePos]
     const shift = shifts.value.find(s => s.id === ref.shiftId) ?? null
     if (slot === 'day') result.day = shift
     else if (slot === 'night') result.night = shift
@@ -144,7 +149,7 @@ const calendarDays = computed((): CalendarCell[] => {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   const cells: CalendarCell[] = []
-  const isDN = schedule.value.pattern === DAY_NIGHT_PATTERN
+  const isDN = DAY_NIGHT_PATTERNS.has(schedule.value.pattern)
 
   const emptyCell = (d: Date): CalendarCell => ({
     day: d.getDate(), date: d, shift: null, dayShift: null, nightShift: null, isToday: false, otherMonth: true
@@ -182,7 +187,8 @@ const patternItems = computed(() => [
   { label: t('settings.shifts.patterns.4on4off'), value: '4on4off' },
   { label: t('settings.shifts.patterns.dupont'), value: 'dupont' },
   { label: t('settings.shifts.patterns.continental'), value: 'continental' },
-  { label: t('settings.shifts.patterns.2on2off2night2off'), value: '2on2off2night2off' }
+  { label: t('settings.shifts.patterns.2on2off2night2off'), value: '2on2off2night2off' },
+  { label: t('settings.shifts.patterns.2day1off2night3off'), value: '2day1off2night3off' }
 ])
 
 const shiftSelectItems = computed(() =>
@@ -423,7 +429,7 @@ async function saveSchedule() {
       <p v-if="!schedule" class="text-sm text-muted text-center py-4">{{ t('settings.shifts.noSchedule') }}</p>
       <template v-else>
         <!-- Legend for day/night pattern -->
-        <div v-if="schedule.pattern === DAY_NIGHT_PATTERN" class="flex flex-wrap gap-3 mb-3 text-xs text-muted">
+        <div v-if="DAY_NIGHT_PATTERNS.has(schedule.pattern)" class="flex flex-wrap gap-3 mb-3 text-xs text-muted">
           <span class="flex items-center gap-1">
             <span class="inline-block w-3 h-3 rounded-full bg-current opacity-60"></span>
             {{ t('settings.shifts.legend.leftHalf') }}

@@ -87,7 +87,7 @@ async function saveEdit(sp: Setpoint) {
   try {
     await apiFetch(`/setpoints/${sp.id}`, {
       method: 'PATCH',
-      body: { value: newVal },
+      body: JSON.stringify({ value: newVal }),
     })
     sp.value = newVal
     toast.add({ title: t('masterData.productGroups.toast.saved'), color: 'success' })

@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref, reactive, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { apiFetch } from '../../utils/api'
 import type { Order } from '../../types'
 
 const props = defineProps<{ order: Order | null }>()
 const emit = defineEmits<{ rescheduled: [] }>()
 
+const { t } = useI18n()
 const open = defineModel<boolean>('open', { default: false })
 const isSubmitting = ref(false)
 
@@ -38,11 +40,11 @@ async function onSubmit() {
         plannedCompleteAt: state.plannedCompleteAt || null,
       })
     })
-    toast.add({ title: 'Order rescheduled', color: 'success' })
+    toast.add({ title: t('orders.reschedule.toast.saved'), color: 'success' })
     open.value = false
     emit('rescheduled')
   } catch (e: any) {
-    toast.add({ title: 'Error', description: e?.message || 'Failed to reschedule', color: 'error' })
+    toast.add({ title: t('common.error'), description: e?.message || t('orders.reschedule.toast.failed'), color: 'error' })
   } finally {
     isSubmitting.value = false
   }
@@ -52,14 +54,14 @@ async function onSubmit() {
 <template>
   <UModal
     v-model:open="open"
-    title="Reschedule Order"
+    :title="t('orders.reschedule.title')"
     :description="order ? `#${order.orderNumber}` : ''"
   >
     <template #body>
       <div class="space-y-4">
         <div class="flex gap-3">
           <div class="flex-1 space-y-1.5">
-            <label class="text-sm font-medium text-highlighted">Planned Start</label>
+            <label class="text-sm font-medium text-highlighted">{{ t('newOrder.fields.plannedStart') }}</label>
             <input
               v-model="state.plannedStartAt"
               type="datetime-local"
@@ -67,7 +69,7 @@ async function onSubmit() {
             />
           </div>
           <div class="flex-1 space-y-1.5">
-            <label class="text-sm font-medium text-highlighted">Planned Complete</label>
+            <label class="text-sm font-medium text-highlighted">{{ t('newOrder.fields.plannedComplete') }}</label>
             <input
               v-model="state.plannedCompleteAt"
               type="datetime-local"
@@ -76,8 +78,8 @@ async function onSubmit() {
           </div>
         </div>
         <div class="flex justify-end gap-2 pt-2">
-          <UButton label="Cancel" color="neutral" variant="subtle" :disabled="isSubmitting" @click="open = false" />
-          <UButton label="Save" color="primary" :loading="isSubmitting" @click="onSubmit" />
+          <UButton :label="t('common.cancel')" color="neutral" variant="subtle" :disabled="isSubmitting" @click="open = false" />
+          <UButton :label="t('common.save')" color="primary" :loading="isSubmitting" @click="onSubmit" />
         </div>
       </div>
     </template>

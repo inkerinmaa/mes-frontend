@@ -179,6 +179,13 @@
       "reschedule": "Reschedule order",
       "cancel": "Cancel order"
     },
+    "reschedule": {
+      "title": "Reschedule Order",
+      "toast": {
+        "saved": "Order rescheduled",
+        "failed": "Failed to reschedule"
+      }
+    },
     "toast": {
       "copied": "Copied to clipboard",
       "copiedDesc": "Order number copied to clipboard",
@@ -658,7 +665,8 @@
         "4on4off": "4 on / 4 off (16-day cycle)",
         "dupont": "DuPont (28-day cycle)",
         "continental": "Continental (12-day cycle)",
-        "2on2off2night2off": "2 on / 2 off / 2 night / 2 off (8-day cycle)"
+        "2on2off2night2off": "2 on / 2 off / 2 night / 2 off (8-day cycle)",
+        "2day1off2night3off": "2 Day / 1 Off / 2 Night / 3 Off (8-day cycle)"
       },
       "shiftRefDatesDesc": "Set the cycle start date for each shift (the first day-shift day of their 8-day cycle). All dates must be unique.",
       "cycleStartDate": "Cycle start date",
