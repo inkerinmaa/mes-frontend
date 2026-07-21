@@ -105,10 +105,9 @@ function resolveAttributeLabel(attr: OrderAttribute): string {
 onMounted(() => { fetchOrder(); fetchLines(); fetchAttributes() })
 
 // Real-time produced counter update from OPC UA via NATS → SignalR
+// Re-fetch the full order so shiftProductions also refreshes alongside the counter
 watch(orderProducedUpdated, (data) => {
-  if (data && data.orderId === orderId.value && order.value) {
-    order.value.producedPackages = data.producedPackages
-  }
+  if (data && data.orderId === orderId.value) fetchOrder()
 })
 
 // Comment editing
