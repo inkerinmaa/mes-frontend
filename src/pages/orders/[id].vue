@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { h, resolveComponent } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { TableColumn } from '@nuxt/ui'
 import { apiFetch } from '../../utils/api'
-import type { OrderDetail, CageEntry, OrderAttribute, BinderType, PkfGroup } from '../../types'
+import type { OrderDetail, OrderAttribute, BinderType, PkfGroup } from '../../types'
 import { useLines } from '../../composables/useLines'
 import { useLocalizedField } from '../../composables/useLocalizedField'
 import { useDashboard } from '../../composables/useDashboard'
@@ -13,8 +11,6 @@ import { useMesUser } from '../../composables/useMesUser'
 
 const { t } = useI18n()
 const { canSeeAdminUi, isAdmin, role } = useMesUser()
-
-const UButton = resolveComponent('UButton')
 
 const route = useRoute()
 const router = useRouter()
@@ -159,63 +155,32 @@ async function saveWaste() {
   }
 }
 
-// Add cage
-const addingCage = ref(false)
-async function addCage() {
-  addingCage.value = true
+// Produced volume correction (admin only)
+const producedDraft = ref<number | null>(null)
+const savingProduced = ref(false)
+
+watch(order, (o) => {
+  if (o) producedDraft.value = Number(o.producedVolume)
+}, { immediate: true })
+
+async function saveProduced() {
+  if (producedDraft.value === null || producedDraft.value < 0) return
+  savingProduced.value = true
   try {
-    const cage = await apiFetch<CageEntry>(`/orders/${orderId.value}/cages`, { method: 'POST' })
-    toast.add({ title: t('orderDetail.cages.toast.added', { n: cage.packages }), color: 'success' })
-    await fetchOrder()
+    const result = await apiFetch<{ producedVolume: number }>(
+      `/orders/${orderId.value}/produced`,
+      { method: 'PATCH', body: JSON.stringify({ producedVolume: producedDraft.value }) }
+    )
+    if (order.value) order.value.producedVolume = result.producedVolume
+    toast.add({ title: t('orderDetail.correctProduced.toast.saved'), color: 'success' })
   } catch (e: any) {
-    toast.add({ title: t('orderDetail.cages.toast.addFailed'), description: e?.message, color: 'error' })
+    toast.add({ title: t('orderDetail.correctProduced.toast.failed'), description: e?.message, color: 'error' })
   } finally {
-    addingCage.value = false
+    savingProduced.value = false
   }
 }
 
-// Cage packages inline editing
-const editingCageId = ref<number | null>(null)
-const cagePackagesDraft = ref(0)
-function startEditPackages(cage: CageEntry) {
-  editingCageId.value = cage.id
-  cagePackagesDraft.value = cage.packages
-}
-async function saveCagePackages(cage: CageEntry) {
-  if (cagePackagesDraft.value <= 0) return
-  try {
-    await apiFetch(`/orders/${orderId.value}/cages/${cage.id}/packages`, {
-      method: 'PATCH',
-      body: JSON.stringify({ packages: cagePackagesDraft.value })
-    })
-    editingCageId.value = null
-    toast.add({ title: t('orderDetail.cages.toast.packagesUpdated'), color: 'success' })
-    await fetchOrder()
-  } catch {
-    toast.add({ title: t('orderDetail.cages.toast.packagesFailed'), color: 'error' })
-  }
-}
-
-async function deleteCage(cage: CageEntry) {
-  try {
-    await apiFetch(`/orders/${orderId.value}/cages/${cage.id}`, { method: 'DELETE' })
-    if (order.value) {
-      order.value.cages = order.value.cages.filter(c => c.id !== cage.id)
-      order.value.producedPackages -= cage.packages
-    }
-    toast.add({ title: t('orderDetail.cages.toast.removed'), color: 'success' })
-  } catch {
-    toast.add({ title: t('orderDetail.cages.toast.removeFailed'), color: 'error' })
-  }
-}
-
-const formatTimestamp = (ts: string) =>
-  new Date(ts).toLocaleString('en-US', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false })
-
-const producedTotal = computed(() => {
-  if (!order.value) return 0
-  return order.value.uomCode === 'pcs' ? order.value.producedPackages : Number(order.value.producedVolume)
-})
+const producedTotal = computed(() => order.value ? Number(order.value.producedVolume) : 0)
 
 const hasGoodQuantity = computed(() => order.value?.goodQuantity != null)
 
@@ -228,7 +193,6 @@ const progressPct = computed(() => {
   return Math.round(producedTotal.value / order.value.volume * 100)
 })
 
-// Admins can add cages/waste in any order state; operators only while running or paused
 const canEditProduction = computed(() => {
   if (!order.value) return false
   if (isAdmin.value) return true
@@ -248,58 +212,7 @@ const detailStatusColor = (s: string): any => ({
   cancelled: 'error'
 }[s] ?? 'neutral')
 
-const cageColumns: TableColumn<CageEntry>[] = [
-  {
-    accessorKey: 'cageGuid',
-    header: () => t('orderDetail.cages.columns.cageId'),
-    cell: ({ row }) => h('span', { class: 'font-mono text-xs text-muted' }, row.original.cageGuid)
-  },
-  {
-    accessorKey: 'cageSize',
-    header: () => h('div', { class: 'text-right' }, t('orderDetail.cages.columns.size')),
-    cell: ({ row }) => h('div', { class: 'text-right text-muted text-sm' }, row.original.cageSize)
-  },
-  {
-    accessorKey: 'packages',
-    header: () => h('div', { class: 'text-right' }, t('orderDetail.cages.columns.packages')),
-    cell: ({ row }) => {
-      if (editingCageId.value === row.original.id) {
-        return h('div', { class: 'flex items-center justify-end gap-1' }, [
-          h('input', {
-            type: 'number', min: 1, value: cagePackagesDraft.value,
-            onInput: (e: Event) => { cagePackagesDraft.value = Number((e.target as HTMLInputElement).value) },
-            class: 'w-16 text-right border border-default rounded px-2 py-0.5 text-sm bg-elevated text-highlighted',
-            onKeydown: (e: KeyboardEvent) => { if (e.key === 'Enter') saveCagePackages(row.original); if (e.key === 'Escape') editingCageId.value = null }
-          }),
-          h(UButton, { icon: 'i-lucide-check', color: 'success', variant: 'ghost', size: 'xs', onClick: () => saveCagePackages(row.original) }),
-          h(UButton, { icon: 'i-lucide-x', color: 'neutral', variant: 'ghost', size: 'xs', onClick: () => { editingCageId.value = null } })
-        ])
-      }
-      return h('div', { class: 'text-right flex items-center justify-end gap-1' }, [
-        h('span', { class: 'font-medium' }, row.original.packages),
-        h(UButton, { icon: 'i-lucide-pencil', color: 'neutral', variant: 'ghost', size: 'xs', onClick: () => startEditPackages(row.original) })
-      ])
-    }
-  },
-  {
-    accessorKey: 'completedAt',
-    header: () => t('orderDetail.cages.columns.completedAt'),
-    cell: ({ row }) => formatTimestamp(row.original.completedAt)
-  },
-  {
-    accessorKey: 'completedBy',
-    header: () => t('orderDetail.cages.columns.completedBy'),
-    cell: ({ row }) => row.original.completedBy || '—'
-  },
-  {
-    id: 'remove',
-    header: '',
-    cell: ({ row }) => h(UButton, {
-      icon: 'i-lucide-trash-2', color: 'error', variant: 'ghost', size: 'xs',
-      onClick: () => deleteCage(row.original)
-    })
-  }
-]
+
 </script>
 
 <template>
@@ -591,43 +504,24 @@ const cageColumns: TableColumn<CageEntry>[] = [
           </p>
         </UCard>
 
-        <!-- Completed cages (cage orders only) -->
-        <UCard v-if="order.cage" class="shrink-0">
+        <!-- Produced volume correction (admin only) -->
+        <UCard v-if="isAdmin" class="shrink-0">
           <template #header>
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-xs text-muted uppercase">{{ t('orderDetail.cages.title') }}</p>
-                <span class="text-sm text-dimmed">{{ t('orderDetail.cages.subtitle', { n: order.cages.length }, order.cages.length) }}</span>
-              </div>
-              <UButton
-                v-if="canSeeAdminUi"
-                :label="t('orderDetail.cages.add')"
-                icon="i-lucide-plus"
-                color="primary"
-                :loading="addingCage"
-                :disabled="!canEditProduction"
-                @click="addCage"
-              />
-            </div>
+            <p class="text-xs text-muted uppercase">{{ t('orderDetail.correctProduced.title') }}</p>
           </template>
-          <p v-if="canSeeAdminUi && !canEditProduction" class="text-sm text-muted mb-2">
-            {{ t('orderDetail.cages.locked') }}
-          </p>
-          <div v-if="!order.cages.length" class="text-sm text-dimmed py-4 text-center">
-            {{ t('orderDetail.cages.empty') }}
+          <div class="flex items-end gap-3">
+            <UFormField :label="t('orderDetail.correctProduced.label', { uom: order.uomCode })" class="flex-1">
+              <UInput v-model.number="producedDraft" type="number" min="0" step="any" class="w-full" />
+            </UFormField>
+            <UButton
+              :label="t('orderDetail.correctProduced.save')"
+              color="primary"
+              :loading="savingProduced"
+              :disabled="producedDraft === null || producedDraft < 0"
+              @click="saveProduced"
+            />
           </div>
-          <UTable
-            v-else
-            :data="order.cages"
-            :columns="cageColumns"
-            :ui="{
-              base: 'table-fixed border-separate border-spacing-0',
-              thead: '[&>tr]:bg-elevated/50 [&>tr]:after:content-none',
-              tbody: '[&>tr]:last:[&>td]:border-b-0',
-              th: 'first:rounded-l-lg last:rounded-r-lg border-y border-default first:border-l last:border-r',
-              td: 'border-b border-default'
-            }"
-          />
+          <p class="text-xs text-muted mt-2">{{ t('orderDetail.correctProduced.current', { value: Number(order.producedVolume).toLocaleString(), uom: order.uomCode }) }}</p>
         </UCard>
 
         <!-- Comment -->

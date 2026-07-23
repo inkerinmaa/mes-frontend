@@ -25,8 +25,6 @@ const schema = z.object({
   uomCode:           z.string().min(1, 'Select a unit'),
   priority:          z.string(),
   lineId:            z.coerce.number().min(1),
-  cage:              z.boolean().default(false),
-  cageSize:          z.coerce.number().min(1).default(50),
   plannedStartAt:    z.string().min(1, 'Required'),
   plannedCompleteAt: z.string().min(1, 'Required'),
   dueDate:           z.string().optional()
@@ -48,8 +46,6 @@ const state = reactive<Partial<Schema>>({
   uomCode:           undefined,
   priority:          'Medium',
   lineId:            1,
-  cage:              false,
-  cageSize:          50,
   plannedStartAt:    '',
   plannedCompleteAt: '',
   dueDate:           ''
@@ -71,27 +67,13 @@ onMounted(async () => {
 })
 
 const toast = useToast()
-const { lineName, fetchLines, lines } = useLines()
+const { lineName, fetchLines } = useLines()
 const { visibleLines } = useSelectedLines()
 
 const selectedProduct = computed(() => products.value.find(p => p.number === state.productCode))
-const isWiredMattsLine = computed(() => {
-  const line = lines.value.find(l => l.id === Number(state.lineId))
-  return line?.name === 'Wired Matts'
-})
 
-// Wired Matts orders always use cage tracking, regardless of UOM; cage size
-// comes from the product's packaging spec, not from user input.
-watch([isWiredMattsLine, selectedProduct], () => {
-  if (isWiredMattsLine.value) {
-    state.cage = true
-    state.cageSize = selectedProduct.value?.pcsInPack && selectedProduct.value.pcsInPack > 0
-      ? selectedProduct.value.pcsInPack
-      : 50
-  } else {
-    state.cage = false
-    state.cageSize = 50
-  }
+watch(selectedProduct, (product) => {
+  if (product?.uomCode) state.uomCode = product.uomCode
 }, { immediate: true })
 
 function resetForm() {
@@ -103,8 +85,6 @@ function resetForm() {
     uomCode:           undefined,
     priority:          'Medium',
     lineId:            1,
-    cage:              false,
-    cageSize:          50,
     plannedStartAt:    '',
     plannedCompleteAt: '',
     dueDate:           ''
@@ -127,9 +107,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
         priority:          event.data.priority,
         plannedStartAt:    event.data.plannedStartAt || null,
         plannedCompleteAt: event.data.plannedCompleteAt || null,
-        dueDate:           event.data.dueDate || null,
-        cage:              event.data.cage ?? false,
-        cageSize:          event.data.cage ? Number(event.data.cageSize) : 50
+        dueDate:           event.data.dueDate || null
       })
     })
     toast.add({
@@ -168,7 +146,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
         <UFormField :label="t('newOrder.fields.product')" name="productCode">
           <USelect
             v-model="state.productCode"
-            :items="products.map(p => ({ label: `${p.number} — ${localize(p.name, p.nameEng) ?? p.description ?? p.number}`, value: p.number }))"
+            :items="products.map(p => ({ label: `${p.number} — ${localize(p.name, p.nameEng) ?? p.number}`, value: p.number }))"
             :placeholder="t('newOrder.placeholder.selectProduct')"
             class="w-full"
           />
@@ -182,6 +160,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
             <USelect
               v-model="state.uomCode"
               :items="uoms.map(u => ({ label: u.code, value: u.code }))"
+              :disabled="!!selectedProduct"
               :placeholder="t('newOrder.placeholder.selectUnit')"
               class="w-full"
             />

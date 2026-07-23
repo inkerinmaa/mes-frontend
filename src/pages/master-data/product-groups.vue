@@ -14,7 +14,7 @@ const toast = useToast()
 const groups   = ref<ProductGroup[]>([])
 const products = ref<ProductListItem[]>([])
 const setpoints = ref<Setpoint[]>([])
-const selectedGroupId = ref<number | null>(null)
+const selectedGroupId = ref<number | undefined>(undefined)
 const productSearch   = ref('')
 const isFetchingSetpoints = ref(false)
 

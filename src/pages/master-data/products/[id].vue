@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { apiFetch } from '../../../utils/api'
 import { useMesUser } from '../../../composables/useMesUser'
 import { useLocalizedField } from '../../../composables/useLocalizedField'
-import type { ProductDetail } from '../../../types'
+import type { ProductDetail, Uom } from '../../../types'
 
 const route  = useRoute()
 const router = useRouter()
@@ -16,15 +16,20 @@ const { localize } = useLocalizedField()
 
 const id      = Number(route.params.id)
 const product = ref<ProductDetail | null>(null)
+const uoms    = ref<Uom[]>([])
 const loading = ref(true)
 const saving  = ref(false)
+
+onMounted(async () => {
+  uoms.value = await apiFetch<Uom[]>('/uoms').catch(() => [])
+})
 
 function n(v: string): number | null { return v === '' ? null : Number(v) }
 function str(v: string): string | null { return v.trim() === '' ? null : v.trim() }
 
 const s = reactive({
   name: '', nameEng: '', coverCode: '', packageCode: '',
-  sequence: '', productionInstruction: '', unit: '',
+  sequence: '', productionInstruction: '', uomId: undefined as number | undefined,
   pcsInPack: '', packsInPackage: '',
   length: '', width: '', thickness: '', density: '',
   layers: '', grindingWaste: '', normWaste: '', grindingWasteOw: '',
@@ -41,7 +46,7 @@ function populate(p: ProductDetail) {
   s.packageCode           = p.packageCode ?? ''
   s.sequence              = p.sequence?.toString() ?? ''
   s.productionInstruction = p.productionInstruction ?? ''
-  s.unit                  = p.uom ?? ''
+  s.uomId                 = p.uomId ?? undefined
   s.pcsInPack             = p.pcsInPack?.toString() ?? ''
   s.packsInPackage        = p.packsInPackage?.toString() ?? ''
   s.length                = p.length?.toString() ?? ''
@@ -95,7 +100,7 @@ async function save() {
         packageCode:           str(s.packageCode),
         sequence:              n(s.sequence),
         productionInstruction: str(s.productionInstruction),
-        unit:                  str(s.unit),
+        uomId:                 s.uomId,
         pcsInPack:             n(s.pcsInPack),
         packsInPackage:        n(s.packsInPackage),
         length:                n(s.length),
@@ -194,7 +199,12 @@ async function save() {
             </div>
             <div class="flex flex-col gap-1">
               <label class="text-xs font-medium text-muted uppercase">{{ t('masterData.products.fields.unit') }}</label>
-              <UInput v-model="s.unit" :disabled="!isAdmin" size="sm" />
+              <USelect
+                v-model="s.uomId"
+                :items="uoms.map(u => ({ label: u.code, value: u.id }))"
+                :disabled="!isAdmin"
+                size="sm"
+              />
             </div>
             <div class="flex flex-col gap-1">
               <label class="text-xs font-medium text-muted uppercase">{{ t('masterData.products.fields.mark') }}</label>

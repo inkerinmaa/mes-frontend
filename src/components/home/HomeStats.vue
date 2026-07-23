@@ -76,13 +76,8 @@ const progress = computed(() => {
   if (!o) return { pct: 0, label: null, orderNumber: null }
   let pct: number
   let label: string
-  if (o.cage) {
-    pct   = o.volume > 0 ? Math.round(o.producedPackages / o.volume * 100) : 0
-    label = `${o.producedPackages.toLocaleString()} / ${o.volume.toLocaleString()} pkg`
-  } else {
-    pct   = o.volume > 0 ? Math.round(o.producedVolume / o.volume * 100) : 0
-    label = `${o.producedVolume.toLocaleString()} / ${o.volume.toLocaleString()} ${o.uomCode}`
-  }
+  pct   = o.volume > 0 ? Math.round(o.producedVolume / o.volume * 100) : 0
+  label = `${o.producedVolume.toLocaleString()} / ${o.volume.toLocaleString()} ${o.uomCode}`
   return { pct, label, orderNumber: o.orderNumber }
 })
 </script>

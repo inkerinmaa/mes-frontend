@@ -223,13 +223,6 @@ const columns = computed<TableColumn<Order>[]>(() => [
     header: () => h('div', { class: 'text-right' }, t('orders.columns.produced')),
     cell: ({ row }) => {
       const o = row.original
-      if (o.cage) {
-        const pct = o.volume > 0 ? Math.round(o.producedPackages / o.volume * 100) : 0
-        return h('div', { class: 'text-right' }, [
-          h('span', { class: 'font-medium' }, o.producedPackages.toLocaleString()),
-          h('span', { class: 'text-muted text-xs ml-1' }, `(${pct}%)`)
-        ])
-      }
       if (!o.producedVolume) return h('div', { class: 'text-right text-muted text-xs' }, '—')
       const pct = o.volume > 0 ? Math.round(o.producedVolume / o.volume * 100) : 0
       return h('div', { class: 'text-right' }, [

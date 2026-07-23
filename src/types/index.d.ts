@@ -96,20 +96,10 @@ export interface Order {
   completeAt: string | null;
   sequence: string;
   tx: number;
-  cage: boolean;
   producedPackages: number;
   producedVolume: number;
   pkgProduced: number;
   comment: string | null;
-}
-
-export interface CageEntry {
-  id: number;
-  cageGuid: string;
-  cageSize: number;
-  packages: number;
-  completedAt: string;
-  completedBy: string | null;
 }
 
 export interface OrderDetail {
@@ -127,8 +117,6 @@ export interface OrderDetail {
   plannedCompleteAt: string | null;
   startAt: string | null;
   completeAt: string | null;
-  cage: boolean;
-  cageSize: number;
   comment: string | null;
   producedPackages: number;
   producedVolume: number;
@@ -157,7 +145,6 @@ export interface OrderDetail {
   productUnit: string | null;
   productCategory: string | null;
   productComment: string | null;
-  cages: CageEntry[];
   shiftProductions: ShiftProduction[];
 }
 
@@ -289,7 +276,7 @@ export interface ProductListItem {
   nameEng: string | null;
   coverCode: string | null;
   packageCode: string | null;
-  uom: string | null;
+  uomCode: string | null;
   pcsInPack: number | null;
   packsInPackage: number | null;
   length: number | null;
@@ -310,7 +297,8 @@ export interface ProductDetail {
   packageCode: string | null;
   sequence: number | null;
   productionInstruction: string | null;
-  uom: string | null;
+  uomId: number | null;
+  uomCode: string | null;
   pcsInPack: number | null;
   packsInPackage: number | null;
   length: number | null;

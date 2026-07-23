@@ -306,6 +306,16 @@
         "failed": "Failed to record waste"
       }
     },
+    "correctProduced": {
+      "title": "Correct Produced Volume",
+      "label": "Total Produced ({uom})",
+      "current": "Current: {value} {uom}",
+      "save": "Save",
+      "toast": {
+        "saved": "Produced volume updated",
+        "failed": "Failed to update produced volume"
+      }
+    },
     "productionInfo": {
       "title": "Production Info",
       "col1": {
