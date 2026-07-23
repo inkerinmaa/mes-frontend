@@ -4,18 +4,31 @@ import { useI18n } from 'vue-i18n'
 import type { TableColumn } from '@nuxt/ui'
 import { getPaginationRowModel } from '@tanstack/table-core'
 import { apiFetch } from '../utils/api'
-import type { ProductionEvent, UnacknowledgedStop, EventType, EventSeverity } from '../types'
+import type { ProductionEvent, UnacknowledgedStop, EventType, EventSeverity, EventTypeInfo } from '../types'
 import { useDashboard } from '../composables/useDashboard'
 import { useLines } from '../composables/useLines'
 import { useSelectedLines } from '../composables/useSelectedLines'
 import EventsAddModal from '../components/events/EventsAddModal.vue'
+import { useLocalizedField } from '../composables/useLocalizedField'
 
 const { t, locale } = useI18n()
+const { localize } = useLocalizedField()
 
 const { stopInserted } = useDashboard()
 const { fetchLines } = useLines()
 const { visibleLines } = useSelectedLines()
 fetchLines()
+
+// Event types from DB
+const eventTypesList = ref<EventTypeInfo[]>([])
+async function fetchEventTypes() {
+  try {
+    eventTypesList.value = await apiFetch<EventTypeInfo[]>('/event-types')
+  } catch (e) {
+    console.error('Failed to fetch event types:', e)
+  }
+}
+fetchEventTypes()
 
 // Unacknowledged stops
 const stops = ref<UnacknowledgedStop[]>([])
@@ -98,15 +111,9 @@ function formatDuration(startAt: string, endAt: string | null): string {
   return `${m}m`
 }
 
-const eventTypeLabel = computed<Record<EventType, string>>(() => ({
-  downtime_unplanned: t('events.types.downtime_unplanned'),
-  downtime_planned:   t('events.types.downtime_planned'),
-  changeover:         t('events.types.changeover'),
-  quality_hold:       t('events.types.quality_hold'),
-  maintenance:        t('events.types.maintenance'),
-  operator_note:      t('events.types.operator_note'),
-  safety:             t('events.types.safety'),
-}))
+const eventTypeLabel = computed<Record<string, string>>(() =>
+  Object.fromEntries(eventTypesList.value.map(et => [et.name, localize(et.name, et.nameEng)]))
+)
 
 const severityColor: Record<EventSeverity, 'neutral' | 'warning' | 'error'> = {
   info:     'neutral',
@@ -114,7 +121,7 @@ const severityColor: Record<EventSeverity, 'neutral' | 'warning' | 'error'> = {
   critical: 'error',
 }
 
-const typeColor: Record<EventType, 'neutral' | 'info' | 'warning' | 'error' | 'primary' | 'success'> = {
+const typeColor: Record<string, 'neutral' | 'info' | 'warning' | 'error' | 'primary' | 'success'> = {
   downtime_unplanned: 'error',
   downtime_planned:   'warning',
   changeover:         'info',
@@ -248,14 +255,8 @@ const columns = computed<TableColumn<ProductionEvent>[]>(() => [
           <USelect
             v-model="typeFilter"
             :items="[
-              { label: t('events.allTypes'),                         value: 'all' },
-              { label: t('events.types.downtime_unplanned'),         value: 'downtime_unplanned' },
-              { label: t('events.types.downtime_planned'),           value: 'downtime_planned' },
-              { label: t('events.types.changeover'),                 value: 'changeover' },
-              { label: t('events.types.quality_hold'),               value: 'quality_hold' },
-              { label: t('events.types.maintenance'),                value: 'maintenance' },
-              { label: t('events.types.operator_note'),              value: 'operator_note' },
-              { label: t('events.types.safety'),                     value: 'safety' },
+              { label: t('events.allTypes'), value: 'all' },
+              ...eventTypesList.map(et => ({ label: localize(et.name, et.nameEng), value: et.name }))
             ]"
             :ui="{ trailingIcon: 'group-data-[state=open]:rotate-180 transition-transform duration-200' }"
             class="min-w-40"

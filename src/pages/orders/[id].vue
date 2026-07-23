@@ -204,6 +204,10 @@ const manualWasteEnabled = computed(() =>
   lines.value.find(l => l.id === order.value?.line)?.manualWasteEnabled ?? true
 )
 
+const producedCorrectionEnabled = computed(() =>
+  lines.value.find(l => l.id === order.value?.line)?.producedCorrectionEnabled ?? true
+)
+
 const detailStatusColor = (s: string): any => ({
   created: 'neutral',
   running: 'success',
@@ -504,8 +508,8 @@ const detailStatusColor = (s: string): any => ({
           </p>
         </UCard>
 
-        <!-- Produced volume correction (admin only) -->
-        <UCard v-if="isAdmin" class="shrink-0">
+        <!-- Produced volume correction (admin only, when enabled for this line) -->
+        <UCard v-if="isAdmin && producedCorrectionEnabled" class="shrink-0">
           <template #header>
             <p class="text-xs text-muted uppercase">{{ t('orderDetail.correctProduced.title') }}</p>
           </template>

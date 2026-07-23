@@ -81,14 +81,15 @@ const isSavingColors = ref(false)
 const isSavingLineControls = ref(false)
 
 // Per-line control toggles (admin only) — keyed by line id
-const lineControls = ref<Record<number, { orderControlEnabled: boolean; manualWasteEnabled: boolean }>>({})
+const lineControls = ref<Record<number, { orderControlEnabled: boolean; manualWasteEnabled: boolean; producedCorrectionEnabled: boolean }>>({})
 
 watch(lines, (val) => {
   val.forEach(l => {
     if (!(l.id in lineControls.value)) {
       lineControls.value[l.id] = {
         orderControlEnabled: l.orderControlEnabled,
-        manualWasteEnabled: l.manualWasteEnabled
+        manualWasteEnabled: l.manualWasteEnabled,
+        producedCorrectionEnabled: l.producedCorrectionEnabled
       }
     }
   })
@@ -432,6 +433,9 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
               </UFormField>
               <UFormField :label="t('settings.lineControls.manualWaste')" class="flex items-center gap-3 flex-row-reverse">
                 <USwitch v-if="lineControls[line.id]" v-model="lineControls[line.id].manualWasteEnabled" />
+              </UFormField>
+              <UFormField :label="t('settings.lineControls.producedCorrection')" class="flex items-center gap-3 flex-row-reverse">
+                <USwitch v-if="lineControls[line.id]" v-model="lineControls[line.id].producedCorrectionEnabled" />
               </UFormField>
             </div>
           </div>

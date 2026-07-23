@@ -68,6 +68,7 @@ const statusConfig = computed<Record<OrderStatus, { label: string; color: 'prima
   cancelled: { label: t('orders.status.cancelled'), color: 'error' }
 }))
 
+
 const columns: TableColumn<Order>[] = [
   {
     id: 'position',
@@ -109,7 +110,13 @@ const columns: TableColumn<Order>[] = [
     id: 'status',
     header: () => t('home.orders.columns.status'),
     cell: ({ row }) => {
-      const cfg = statusConfig.value[row.original.status as OrderStatus] ?? { label: row.original.status, color: 'neutral' as const }
+      const s = row.original.status as OrderStatus
+      const seq = row.original.sequence ?? ''
+      if (s === 'created' || s === 'paused') {
+        if (seq === 'Next') return h(UBadge, { variant: 'subtle', color: 'primary' }, () => t('orders.queue.next'))
+        if (seq.startsWith('Next+')) return h(UBadge, { variant: 'subtle', color: 'neutral' }, () => t('orders.queue.nextPlus', { n: seq.slice(5) }))
+      }
+      const cfg = statusConfig.value[s] ?? { label: seq || s, color: 'neutral' as const }
       return h(UBadge, { variant: 'subtle', color: cfg.color }, () => cfg.label)
     }
   }

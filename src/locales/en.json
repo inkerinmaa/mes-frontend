@@ -646,6 +646,7 @@
       "description": "Per-line toggles for order state control and manual waste input. Admin only.",
       "orderControl": "Order Control",
       "manualWaste": "Manual Waste",
+      "producedCorrection": "Produced Correction",
       "toast": {
         "saved": "Line controls saved",
         "failed": "Failed to save line controls"

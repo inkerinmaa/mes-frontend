@@ -4,9 +4,8 @@ export type UserStatus = "subscribed" | "unsubscribed" | "bounced";
 export type SaleStatus = "paid" | "failed" | "refunded";
 export type OrderPriority = "High" | "Medium" | "Low";
 export type EventSeverity = "info" | "warning" | "critical";
-export type EventType =
-  | "downtime_unplanned" | "downtime_planned" | "changeover"
-  | "quality_hold" | "maintenance" | "operator_note" | "safety";
+export type EventType = string;
+export interface EventTypeInfo { id: number; name: string; nameEng: string; }
 
 export interface User {
   id: number;
@@ -184,6 +183,7 @@ export interface ProductionLine {
   name: string;
   orderControlEnabled: boolean;
   manualWasteEnabled: boolean;
+  producedCorrectionEnabled: boolean;
 }
 
 export interface Shift {

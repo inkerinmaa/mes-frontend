@@ -4,11 +4,13 @@ import { useI18n } from 'vue-i18n'
 import * as z from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import { apiFetch } from '../../utils/api'
-import type { UnacknowledgedStop } from '../../types'
+import type { UnacknowledgedStop, EventTypeInfo } from '../../types'
 import { useLines } from '../../composables/useLines'
 import { useSelectedLines } from '../../composables/useSelectedLines'
+import { useLocalizedField } from '../../composables/useLocalizedField'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
+const { localize } = useLocalizedField()
 
 const props = defineProps<{ stop?: UnacknowledgedStop | null }>()
 const emit = defineEmits<{ created: [] }>()
@@ -17,23 +19,30 @@ const open = defineModel<boolean>('open', { default: false })
 const isSubmitting = ref(false)
 const { fetchLines } = useLines()
 const { visibleLines } = useSelectedLines()
+const eventTypesList = ref<EventTypeInfo[]>([])
+
+async function fetchEventTypes() {
+  try {
+    eventTypesList.value = await apiFetch<EventTypeInfo[]>('/event-types')
+  } catch (e) {
+    console.error('Failed to fetch event types:', e)
+  }
+}
 
 watch(open, (val) => {
   if (val) {
     fetchLines()
+    fetchEventTypes()
     resetForm()
   }
 })
 
-const eventTypeItems = computed(() => [
-  { label: t('addEvent.types.downtime_unplanned'), value: 'downtime_unplanned' },
-  { label: t('addEvent.types.downtime_planned'),   value: 'downtime_planned' },
-  { label: t('addEvent.types.changeover'),         value: 'changeover' },
-  { label: t('addEvent.types.quality_hold'),       value: 'quality_hold' },
-  { label: t('addEvent.types.maintenance'),        value: 'maintenance' },
-  { label: t('addEvent.types.operator_note'),      value: 'operator_note' },
-  { label: t('addEvent.types.safety'),             value: 'safety' },
-])
+const eventTypeItems = computed(() =>
+  eventTypesList.value.map(et => ({
+    label: localize(et.name, et.nameEng),
+    value: et.name,
+  }))
+)
 
 const schema = z.object({
   lineId:      z.coerce.number().min(1),
